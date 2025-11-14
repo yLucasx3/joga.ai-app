@@ -6,7 +6,7 @@ export { Input } from './Input';
 export { Card } from './Card';
 
 export { Badge } from './Badge';
-export type { BadgeVariant, BadgeSize } from './Badge';
+export type { BadgeVariant } from './Badge';
 
 export { Avatar } from './Avatar';
 export type { AvatarSize } from './Avatar';
@@ -20,3 +20,5 @@ export { BottomSheet } from './BottomSheet';
 export { Loading, Skeleton } from './Loading';
 
 export { EmptyState } from './EmptyState';
+
+export { FilterChip } from './FilterChip';

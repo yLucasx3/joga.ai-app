@@ -140,8 +140,8 @@
     - Configure screen options for each stack
     - _Requirements: 2, 3, 4, 5, 6, 9_
 
-- [ ] 6. Home and Activity Discovery
-  - [ ] 6.1 Implement location service
+- [x] 6. Home and Activity Discovery
+  - [x] 6.1 Implement location service
     - Create location.service.ts for geolocation
     - Request location permissions with explanation
     - Get current user location
@@ -149,7 +149,7 @@
     - Handle location errors and fallbacks
     - _Requirements: 13_
   
-  - [ ] 6.2 Create map view component
+  - [x] 6.2 Create map view component
     - Implement MapView component with react-native-maps
     - Add activity markers with custom icons
     - Implement marker clustering for performance
@@ -157,7 +157,7 @@
     - Handle map region changes
     - _Requirements: 2, 13_
   
-  - [ ] 6.3 Build home screen
+  - [x] 6.3 Build home screen
     - Create HomeScreen with map and bottom sheet
     - Implement activity fetching with React Query
     - Add pull-to-refresh functionality
@@ -165,7 +165,7 @@
     - Implement filter chips (Public, Sport types)
     - _Requirements: 2, 12, 13_
   
-  - [ ] 6.4 Create activity card component
+  - [x] 6.4 Create activity card component
     - Implement ActivityCard with image, title, sport, location
     - Display date, time, and available spots
     - Add status badge (Open, Full, Cancelled)
@@ -173,7 +173,7 @@
     - Handle card press to navigate to details
     - _Requirements: 2, 3_
   
-  - [ ] 6.5 Build search screen
+  - [x] 6.5 Build search screen
     - Create SearchScreen with search bar and filters
     - Implement location/address search
     - Add sport filter chips
