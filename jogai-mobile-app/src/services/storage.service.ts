@@ -113,7 +113,7 @@ export const storageService = {
     }
   },
 
-  async isOnboardingCompleted(): Promise<boolean> {
+  async getOnboardingCompleted(): Promise<boolean> {
     try {
       const completed = await AsyncStorage.getItem(ONBOARDING_KEY);
       return completed ? JSON.parse(completed) : false;
@@ -121,6 +121,10 @@ export const storageService = {
       console.error('Error checking onboarding status:', error);
       return false;
     }
+  },
+
+  async isOnboardingCompleted(): Promise<boolean> {
+    return this.getOnboardingCompleted();
   },
 
   // Clear all data
