@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
+    fontWeight: typography.fontWeight.semiBold,
     color: colors.textSecondary,
   },
   showMoreText: {
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   clearFiltersText: {
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
+    fontWeight: typography.fontWeight.semiBold,
     color: colors.error,
   },
   resultsContainer: {

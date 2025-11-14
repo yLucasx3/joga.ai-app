@@ -1,0 +1,1 @@
+export { ProtectedScreen } from './ProtectedScreen';

@@ -95,6 +95,18 @@ The app connects to two backend services:
 
 Configure the URLs in your `.env` file.
 
+## 🔐 Authentication Flow
+
+The app uses a **guest-first approach** where users can browse activities without logging in:
+
+- **Browse freely**: Users can view activities, search, and explore the map without authentication
+- **Login required for**:
+  - Creating new activities
+  - Joining/participating in activities
+  - Accessing full profile features
+
+When a non-authenticated user tries to perform a protected action, they are automatically redirected to the login screen. After successful login, they can continue with their intended action.
+
 ## 📦 Building
 
 ```bash

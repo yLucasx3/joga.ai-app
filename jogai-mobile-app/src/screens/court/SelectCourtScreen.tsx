@@ -2,6 +2,7 @@
  * Select Court Screen
  * 
  * Screen for browsing and selecting courts
+ * Requires authentication to access
  * TODO: Implement in task 8.1
  */
 
@@ -9,13 +10,16 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
+import { ProtectedScreen } from '../../components/auth/ProtectedScreen';
 
 const SelectCourtScreen: React.FC = () => {
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Select Court Screen</Text>
-      <Text style={styles.subtext}>To be implemented in task 8</Text>
-    </View>
+    <ProtectedScreen>
+      <View style={styles.container}>
+        <Text style={styles.text}>Select Court Screen</Text>
+        <Text style={styles.subtext}>To be implemented in task 8</Text>
+      </View>
+    </ProtectedScreen>
   );
 };
 

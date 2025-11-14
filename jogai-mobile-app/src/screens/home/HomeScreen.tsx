@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   },
   clearButtonText: {
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
+    fontWeight: typography.fontWeight.semiBold,
     color: colors.error,
   },
   activitiesList: {

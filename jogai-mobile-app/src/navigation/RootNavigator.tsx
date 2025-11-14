@@ -72,38 +72,12 @@ const linking: LinkingOptions<RootStackParamList> = {
  * Root Navigator Component
  */
 const RootNavigator: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
-  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
+  const { isLoading } = useAuth();
 
   /**
-   * Check if user has completed onboarding
+   * Show loading screen while checking auth status
    */
-  useEffect(() => {
-    const checkOnboarding = async () => {
-      try {
-        const completed = await storageService.getOnboardingCompleted();
-        setHasCompletedOnboarding(completed);
-      } catch (error) {
-        console.error('Error checking onboarding status:', error);
-        setHasCompletedOnboarding(false);
-      } finally {
-        setIsCheckingOnboarding(false);
-      }
-    };
-
-    if (isAuthenticated && !isLoading) {
-      checkOnboarding();
-    } else if (!isLoading) {
-      setIsCheckingOnboarding(false);
-      setHasCompletedOnboarding(null);
-    }
-  }, [isAuthenticated, isLoading]);
-
-  /**
-   * Show loading screen while checking auth and onboarding status
-   */
-  if (isLoading || isCheckingOnboarding) {
+  if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -111,40 +85,37 @@ const RootNavigator: React.FC = () => {
     );
   }
 
-  /**
-   * Determine initial route based on auth and onboarding status
-   */
-  const getInitialRouteName = (): keyof RootStackParamList => {
-    if (!isAuthenticated) {
-      return 'Auth';
-    }
-    
-    if (!hasCompletedOnboarding) {
-      return 'Onboarding';
-    }
-    
-    return 'Main';
-  };
-
   return (
     <NavigationContainer theme={navigationTheme} linking={linking}>
       <Stack.Navigator
-        initialRouteName={getInitialRouteName()}
+        initialRouteName="Main"
         screenOptions={{
           headerShown: false,
           cardStyle: { backgroundColor: colors.background },
         }}
       >
-        {!isAuthenticated ? (
-          // Auth flow
-          <Stack.Screen name="Auth" component={AuthNavigator} />
-        ) : !hasCompletedOnboarding ? (
-          // Onboarding flow
-          <Stack.Screen name="Onboarding" component={SportSelectionScreen} />
-        ) : (
-          // Main app flow
-          <Stack.Screen name="Main" component={MainNavigator} />
-        )}
+        {/* Main app flow - always accessible */}
+        <Stack.Screen name="Main" component={MainNavigator} />
+        
+        {/* Auth flow - shown as modal when needed */}
+        <Stack.Screen 
+          name="Auth" 
+          component={AuthNavigator}
+          options={{
+            presentation: 'modal',
+            gestureEnabled: false,
+          }}
+        />
+        
+        {/* Onboarding flow - shown after first login */}
+        <Stack.Screen 
+          name="Onboarding" 
+          component={SportSelectionScreen}
+          options={{
+            presentation: 'modal',
+            gestureEnabled: false,
+          }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

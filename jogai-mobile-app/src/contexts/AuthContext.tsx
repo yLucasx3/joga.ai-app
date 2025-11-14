@@ -27,6 +27,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   /**
    * Initialize authentication state on app start
+   * Non-blocking - allows app to load even if not authenticated
    */
   const initializeAuth = useCallback(async () => {
     try {
@@ -43,15 +44,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(userData);
           setIsAuthenticated(true);
         } else {
-          // Token exists but no user data - clear everything
+          // Token exists but no user data - clear everything silently
           await authService.logout();
           setIsAuthenticated(false);
         }
       } else {
+        // Not authenticated - this is OK, user can browse freely
         setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('Auth initialization error:', error);
+      // Don't block app on auth errors
       setIsAuthenticated(false);
       setUser(null);
     } finally {
