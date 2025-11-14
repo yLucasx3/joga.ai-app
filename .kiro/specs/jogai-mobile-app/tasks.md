@@ -69,15 +69,15 @@
     - Create user preferences endpoints
     - _Requirements: 9_
 
-- [ ] 4. Authentication and Onboarding
-  - [ ] 4.1 Create authentication context
+- [x] 4. Authentication and Onboarding
+  - [x] 4.1 Create authentication context
     - Implement AuthContext with login, logout, register methods
     - Create useAuth hook for consuming auth context
     - Implement authentication state persistence
     - Handle token expiration and refresh
     - _Requirements: 1_
   
-  - [ ] 4.2 Build login screen
+  - [x] 4.2 Build login screen
     - Create LoginScreen with email and password inputs
     - Implement form validation with React Hook Form and Zod
     - Add "Forgot Password" link
@@ -85,7 +85,7 @@
     - Handle login errors and display messages
     - _Requirements: 1_
   
-  - [ ] 4.3 Build registration screen
+  - [x] 4.3 Build registration screen
     - Create RegisterScreen with name, email, password, phone inputs
     - Implement password confirmation validation
     - Add terms of service checkbox
@@ -93,13 +93,13 @@
     - Navigate to onboarding after successful registration
     - _Requirements: 1_
   
-  - [ ] 4.4 Build forgot password screen
+  - [x] 4.4 Build forgot password screen
     - Create ForgotPasswordScreen with email input
     - Implement password reset request
     - Display confirmation message
     - _Requirements: 1_
   
-  - [ ] 4.5 Build sport selection onboarding
+  - [x] 4.5 Build sport selection onboarding
     - Create SportSelectionScreen with sport grid
     - Implement multi-select functionality with visual feedback
     - Add search bar for filtering sports
