@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Jogai",
+    "slug": "jogai-mobile-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#E67E22"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jogai.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We need your location to show nearby sports activities",
+        "NSLocationAlwaysUsageDescription": "We need your location to show nearby sports activities",
+        "NSCameraUsageDescription": "We need access to your camera to update your profile photo",
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to update your profile photo"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#E67E22"
+      },
+      "package": "com.jogai.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-location",
+      "expo-secure-store",
+      "expo-notifications",
+      "expo-image-picker",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
+}
