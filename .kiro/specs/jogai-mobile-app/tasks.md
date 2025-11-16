@@ -182,8 +182,8 @@
     - Display filtered results in list
     - _Requirements: 12_
 
-- [ ] 7. Activity Details and Participation
-  - [ ] 7.1 Build activity details screen
+- [x] 7. Activity Details and Participation
+  - [x] 7.1 Build activity details screen
     - Create ActivityDetailsScreen with header image
     - Display activity title, description, and status badge
     - Show sport icon and name
@@ -192,7 +192,7 @@
     - Display organizer information
     - _Requirements: 3_
   
-  - [ ] 7.2 Create participant list component
+  - [x] 7.2 Create participant list component
     - Implement ParticipantList with avatar group
     - Display participant names and status
     - Show available spots counter
@@ -200,14 +200,14 @@
     - Handle "+X" indicator for overflow participants
     - _Requirements: 3, 4_
   
-  - [ ] 7.3 Implement join functionality
+  - [x] 7.3 Implement join functionality
     - Add "Join" button with conditional rendering
     - Navigate to confirmation screen on press
     - Disable button when activity is full
     - Show "Cancel Participation" for existing participants
     - _Requirements: 4_
   
-  - [ ] 7.4 Build participation confirmation screen
+  - [x] 7.4 Build participation confirmation screen
     - Create ConfirmParticipationScreen with activity summary
     - Add form with Full Name and Phone Number inputs
     - Display spots left indicator
@@ -216,7 +216,7 @@
     - Show success message and navigate back
     - _Requirements: 4_
   
-  - [ ] 7.5 Implement share functionality
+  - [x] 7.5 Implement share functionality
     - Add share button to activity details
     - Generate share link with activity details
     - Implement native share sheet
