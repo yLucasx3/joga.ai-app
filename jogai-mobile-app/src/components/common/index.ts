@@ -26,3 +26,6 @@ export { Loading, Skeleton } from './Loading';
 export { EmptyState } from './EmptyState';
 
 export { FilterChip } from './FilterChip';
+
+export { Dropdown } from './Dropdown';
+export type { DropdownOption } from './Dropdown';

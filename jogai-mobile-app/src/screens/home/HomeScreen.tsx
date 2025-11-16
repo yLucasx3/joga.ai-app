@@ -21,10 +21,10 @@ import { spacing } from '../../theme/spacing';
 import { MapView } from '../../components/map/MapView';
 import { ActivityCard } from '../../components/activity/ActivityCard';
 import { DraggableBottomSheetSimple } from '../../components/common/DraggableBottomSheetSimple';
-import { FilterChip } from '../../components/common/FilterChip';
+import { Dropdown, DropdownOption } from '../../components/common/Dropdown';
 import { useLocation } from '../../hooks/useLocation';
 import { useNearbyActivities } from '../../hooks/useActivities';
-import { Activity, ActivityType } from '../../types/activity.types';
+import { Activity } from '../../types/activity.types';
 import { SPORTS } from '../../constants/sports';
 
 const HomeScreen: React.FC = () => {
@@ -32,20 +32,88 @@ const HomeScreen: React.FC = () => {
   const { location, loading: locationLoading } = useLocation();
   
   // Filters state
-  const [selectedType, setSelectedType] = useState<ActivityType | undefined>(undefined);
+  const [selectedType, setSelectedType] = useState<string>('ALL');
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
+  const [selectedDistance, setSelectedDistance] = useState<string>('10');
+  const [selectedDate, setSelectedDate] = useState<string>('ALL');
   
-  // Bottom sheet state
-  const [sheetSnapPoint, setSheetSnapPoint] = useState<'MIN' | 'MID' | 'MAX'>('MID');
+
+
+  // Activity type options
+  const activityTypeOptions: DropdownOption[] = [
+    { label: 'All', value: 'ALL', icon: '🌐' },
+    { label: 'Public', value: 'PUBLIC', icon: '🌍' },
+    { label: 'Private', value: 'PRIVATE', icon: '🔒' },
+  ];
+
+  // Sport options
+  const sportOptions: DropdownOption[] = SPORTS.map((sport) => ({
+    label: sport.name,
+    value: sport.key,
+    icon: sport.icon,
+  }));
+
+  // Distance options
+  const distanceOptions: DropdownOption[] = [
+    { label: '1 km', value: '1', icon: '📍' },
+    { label: '5 km', value: '5', icon: '📍' },
+    { label: '10 km', value: '10', icon: '📍' },
+    { label: '25 km', value: '25', icon: '📍' },
+    { label: '50 km', value: '50', icon: '📍' },
+  ];
+
+  // Date options
+  const dateOptions: DropdownOption[] = [
+    { label: 'All', value: 'ALL', icon: '📅' },
+    { label: 'Today', value: 'TODAY', icon: '📅' },
+    { label: 'Tomorrow', value: 'TOMORROW', icon: '📅' },
+    { label: 'This Week', value: 'WEEK', icon: '📅' },
+    { label: 'This Month', value: 'MONTH', icon: '📅' },
+  ];
 
   // Build filters object
   const filters = useMemo(() => {
     const f: any = {};
-    if (selectedType) f.type = selectedType;
+    if (selectedType && selectedType !== 'ALL') f.type = selectedType;
     if (selectedSports.length > 0) f.sportKeys = selectedSports;
+    
+    // Date filter
+    if (selectedDate !== 'ALL') {
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date;
+
+      switch (selectedDate) {
+        case 'TODAY':
+          startDate = new Date(now.setHours(0, 0, 0, 0));
+          endDate = new Date(now.setHours(23, 59, 59, 999));
+          break;
+        case 'TOMORROW':
+          startDate = new Date(now.setDate(now.getDate() + 1));
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(startDate);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case 'WEEK':
+          startDate = new Date(now.setHours(0, 0, 0, 0));
+          endDate = new Date(now.setDate(now.getDate() + 7));
+          break;
+        case 'MONTH':
+          startDate = new Date(now.setHours(0, 0, 0, 0));
+          endDate = new Date(now.setMonth(now.getMonth() + 1));
+          break;
+        default:
+          startDate = now;
+          endDate = now;
+      }
+
+      f.startDate = startDate.toISOString();
+      f.endDate = endDate.toISOString();
+    }
+    
     f.status = 'ACTIVE'; // Only show active activities
     return f;
-  }, [selectedType, selectedSports]);
+  }, [selectedType, selectedSports, selectedDate]);
 
   // Fetch nearby activities
   const {
@@ -56,7 +124,7 @@ const HomeScreen: React.FC = () => {
   } = useNearbyActivities(
     location?.latitude || 0,
     location?.longitude || 0,
-    10, // 10km radius
+    parseInt(selectedDistance, 10), // Use selected distance
     filters,
     undefined,
     !!location
@@ -89,39 +157,54 @@ const HomeScreen: React.FC = () => {
   }, [refetch]);
 
   /**
-   * Toggle activity type filter
+   * Handle activity type change
    */
-  const toggleTypeFilter = useCallback((type: ActivityType) => {
-    setSelectedType((current) => (current === type ? undefined : type));
+  const handleTypeChange = useCallback((value: string | string[]) => {
+    setSelectedType(value as string);
   }, []);
 
   /**
-   * Toggle sport filter
+   * Handle sports change
    */
-  const toggleSportFilter = useCallback((sportKey: string) => {
-    setSelectedSports((current) => {
-      if (current.includes(sportKey)) {
-        return current.filter((key) => key !== sportKey);
-      }
-      return [...current, sportKey];
-    });
+  const handleSportsChange = useCallback((value: string | string[]) => {
+    setSelectedSports(value as string[]);
+  }, []);
+
+  /**
+   * Handle distance change
+   */
+  const handleDistanceChange = useCallback((value: string | string[]) => {
+    setSelectedDistance(value as string);
+  }, []);
+
+  /**
+   * Handle date change
+   */
+  const handleDateChange = useCallback((value: string | string[]) => {
+    setSelectedDate(value as string);
   }, []);
 
   /**
    * Clear all filters
    */
   const clearFilters = useCallback(() => {
-    setSelectedType(undefined);
+    setSelectedType('ALL');
     setSelectedSports([]);
+    setSelectedDistance('10');
+    setSelectedDate('ALL');
   }, []);
 
-  const hasFilters = selectedType || selectedSports.length > 0;
+  const hasFilters = 
+    selectedType !== 'ALL' || 
+    selectedSports.length > 0 || 
+    selectedDistance !== '10' ||
+    selectedDate !== 'ALL';
 
   /**
    * Handle bottom sheet snap point change
    */
-  const handleSnapPointChange = useCallback((snapPoint: 'MIN' | 'MID' | 'MAX') => {
-    setSheetSnapPoint(snapPoint);
+  const handleSnapPointChange = useCallback((_snapPoint: 'MIN' | 'MID' | 'MAX') => {
+    // Could be used to adjust map zoom or other UI elements
   }, []);
 
   return (
@@ -153,30 +236,46 @@ const HomeScreen: React.FC = () => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filtersContent}
           >
-            {/* Type Filters */}
-            <FilterChip
-              label="Public"
-              icon="🌍"
-              selected={selectedType === 'PUBLIC'}
-              onPress={() => toggleTypeFilter('PUBLIC')}
-            />
-            <FilterChip
-              label="Private"
-              icon="🔒"
-              selected={selectedType === 'PRIVATE'}
-              onPress={() => toggleTypeFilter('PRIVATE')}
+            {/* Activity Type Dropdown */}
+            <Dropdown
+              label="Activity Type"
+              placeholder="All"
+              options={activityTypeOptions}
+              value={selectedType}
+              onChange={handleTypeChange}
+              icon="🎯"
             />
 
-            {/* Sport Filters - Show first 5 sports */}
-            {SPORTS.slice(0, 5).map((sport) => (
-              <FilterChip
-                key={sport.key}
-                label={sport.name}
-                icon={sport.icon}
-                selected={selectedSports.includes(sport.key)}
-                onPress={() => toggleSportFilter(sport.key)}
-              />
-            ))}
+            {/* Sports Dropdown */}
+            <Dropdown
+              label="Sports"
+              placeholder="All Sports"
+              options={sportOptions}
+              value={selectedSports}
+              multiple
+              onChange={handleSportsChange}
+              icon="⚽"
+            />
+
+            {/* Distance Dropdown */}
+            <Dropdown
+              label="Distance"
+              placeholder="10 km"
+              options={distanceOptions}
+              value={selectedDistance}
+              onChange={handleDistanceChange}
+              icon="📍"
+            />
+
+            {/* Date Dropdown */}
+            <Dropdown
+              label="When"
+              placeholder="All"
+              options={dateOptions}
+              value={selectedDate}
+              onChange={handleDateChange}
+              icon="📅"
+            />
 
             {/* Clear filters */}
             {hasFilters && (
@@ -265,11 +364,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     justifyContent: 'center',
+    backgroundColor: colors.gray100,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.gray200,
   },
   clearButtonText: {
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semiBold,
-    color: colors.error,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.gray600,
   },
   activitiesList: {
     flex: 1,
