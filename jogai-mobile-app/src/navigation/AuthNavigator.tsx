@@ -6,7 +6,10 @@
  */
 
 import React from 'react';
+import { TouchableOpacity } from 'react-native';
 import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { AuthStackParamList } from './types';
 import { colors } from '../theme/colors';
 
@@ -18,6 +21,23 @@ import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
 const Stack = createStackNavigator<AuthStackParamList>();
 
 /**
+ * Close button component for Login screen
+ */
+const CloseButton: React.FC = () => {
+  const navigation = useNavigation();
+  
+  return (
+    <TouchableOpacity
+      onPress={() => navigation.goBack()}
+      style={{ marginLeft: 16 }}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+    >
+      <Ionicons name="close" size={28} color={colors.textPrimary} />
+    </TouchableOpacity>
+  );
+};
+
+/**
  * Auth Navigator Component
  */
 const AuthNavigator: React.FC = () => {
@@ -25,7 +45,17 @@ const AuthNavigator: React.FC = () => {
     <Stack.Navigator
       initialRouteName="Login"
       screenOptions={{
-        headerShown: false,
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: colors.background,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        headerTintColor: colors.textPrimary,
+        headerTitleStyle: {
+          fontWeight: '600',
+        },
+        headerBackTitleVisible: false,
         cardStyle: { backgroundColor: colors.background },
         ...TransitionPresets.SlideFromRightIOS,
       }}
@@ -34,7 +64,8 @@ const AuthNavigator: React.FC = () => {
         name="Login"
         component={LoginScreen}
         options={{
-          title: 'Login',
+          title: 'Sign In',
+          headerLeft: () => <CloseButton />,
         }}
       />
       <Stack.Screen

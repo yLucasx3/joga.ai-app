@@ -103,7 +103,8 @@ const RootNavigator: React.FC = () => {
           component={AuthNavigator}
           options={{
             presentation: 'modal',
-            gestureEnabled: false,
+            gestureEnabled: true,
+            gestureDirection: 'vertical',
           }}
         />
         
