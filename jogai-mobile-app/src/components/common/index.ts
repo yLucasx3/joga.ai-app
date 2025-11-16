@@ -17,6 +17,10 @@ export { Header } from './Header';
 
 export { BottomSheet } from './BottomSheet';
 
+export { DraggableBottomSheet } from './DraggableBottomSheet';
+
+export { DraggableBottomSheetSimple } from './DraggableBottomSheetSimple';
+
 export { Loading, Skeleton } from './Loading';
 
 export { EmptyState } from './EmptyState';

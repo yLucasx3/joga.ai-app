@@ -20,7 +20,7 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { MapView } from '../../components/map/MapView';
 import { ActivityCard } from '../../components/activity/ActivityCard';
-import { BottomSheet } from '../../components/common/BottomSheet';
+import { DraggableBottomSheetSimple } from '../../components/common/DraggableBottomSheetSimple';
 import { FilterChip } from '../../components/common/FilterChip';
 import { useLocation } from '../../hooks/useLocation';
 import { useNearbyActivities } from '../../hooks/useActivities';
@@ -29,11 +29,14 @@ import { SPORTS } from '../../constants/sports';
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { location, loading: locationLoading, requestPermission } = useLocation();
+  const { location, loading: locationLoading } = useLocation();
   
   // Filters state
   const [selectedType, setSelectedType] = useState<ActivityType | undefined>(undefined);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
+  
+  // Bottom sheet state
+  const [sheetSnapPoint, setSheetSnapPoint] = useState<'MIN' | 'MID' | 'MAX'>('MID');
 
   // Build filters object
   const filters = useMemo(() => {
@@ -114,6 +117,13 @@ const HomeScreen: React.FC = () => {
 
   const hasFilters = selectedType || selectedSports.length > 0;
 
+  /**
+   * Handle bottom sheet snap point change
+   */
+  const handleSnapPointChange = useCallback((snapPoint: 'MIN' | 'MID' | 'MAX') => {
+    setSheetSnapPoint(snapPoint);
+  }, []);
+
   return (
     <View style={styles.container}>
       {/* Map */}
@@ -131,8 +141,11 @@ const HomeScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Bottom Sheet with Activities */}
-      <BottomSheet>
+      {/* Draggable Bottom Sheet with Activities */}
+      <DraggableBottomSheetSimple
+        initialSnapPoint="MID"
+        onSnapPointChange={handleSnapPointChange}
+      >
         {/* Filters */}
         <View style={styles.filtersContainer}>
           <ScrollView
@@ -222,7 +235,7 @@ const HomeScreen: React.FC = () => {
           {/* Bottom padding */}
           <View style={styles.bottomPadding} />
         </ScrollView>
-      </BottomSheet>
+      </DraggableBottomSheetSimple>
     </View>
   );
 };

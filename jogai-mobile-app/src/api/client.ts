@@ -156,6 +156,7 @@ export const createAuthClient = (baseURL: string): AxiosInstance => {
       return response;
     },
     (error: AxiosError) => {
+      console.error('[Auth Client] Error:', error);
       if (!error.response) {
         const apiError: ApiError = {
           code: ErrorCode.NETWORK_ERROR,
@@ -163,7 +164,7 @@ export const createAuthClient = (baseURL: string): AxiosInstance => {
         };
         return Promise.reject(apiError);
       }
-
+      
       return Promise.reject(parseApiError(error));
     }
   );
@@ -185,6 +186,8 @@ const parseApiError = (error: AxiosError): ApiError => {
   }
 
   const data = response.data as any;
+
+  console.log("Response Status: ", response.status)
 
   switch (response.status) {
     case 400:
@@ -231,5 +234,6 @@ const parseApiError = (error: AxiosError): ApiError => {
 };
 
 // Create client instances
+
 export const apiClient = createApiClient(config.API_BASE_URL);
 export const authClient = createAuthClient(config.API_AUTH_URL);
