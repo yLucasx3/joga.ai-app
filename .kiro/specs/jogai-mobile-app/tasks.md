@@ -223,8 +223,8 @@
     - Support WhatsApp, SMS, Email sharing
     - _Requirements: 10_
 
-- [ ] 8. Activity Creation Flow
-  - [ ] 8.1 Build court selection screen
+- [x] 8. Activity Creation Flow
+  - [x] 8.1 Build court selection screen
     - Create SelectCourtScreen with map and list toggle
     - Implement court search by address/area
     - Display court cards with image, name, distance
@@ -232,14 +232,14 @@
     - Handle court selection and navigate to sport selection
     - _Requirements: 6_
   
-  - [ ] 8.2 Create court card component
+  - [x] 8.2 Create court card component
     - Implement CourtCard with image and information
     - Display court name and distance
     - Show amenity icons with labels
     - Add press handler for selection
     - _Requirements: 6_
   
-  - [ ] 8.3 Build sport selection for creation
+  - [x] 8.3 Build sport selection for creation
     - Create sport selection screen for chosen court
     - Display only sports available for selected court
     - Add search functionality
@@ -247,7 +247,7 @@
     - Navigate to activity form on selection
     - _Requirements: 5, 7_
   
-  - [ ] 8.4 Build activity creation form
+  - [x] 8.4 Build activity creation form
     - Create CreateActivityScreen with form fields
     - Add Title input (required)
     - Add Description textarea (optional)
@@ -258,21 +258,21 @@
     - Implement form validation
     - _Requirements: 5_
   
-  - [ ] 8.5 Create date and time pickers
+  - [x] 8.5 Create date and time pickers
     - Implement DatePicker component with modal
     - Implement TimePicker component with modal
     - Format selected dates/times for display
     - Validate date/time ranges
     - _Requirements: 5, 14_
   
-  - [ ] 8.6 Create slider component
+  - [x] 8.6 Create slider component
     - Implement custom Slider for max players
     - Add increment/decrement buttons
     - Display current value
     - Set min/max constraints
     - _Requirements: 5_
   
-  - [ ] 8.7 Build activity review screen
+  - [x] 8.7 Build activity review screen
     - Create ReviewActivityScreen with summary sections
     - Display Sport and Location section with edit button
     - Display Activity Details section with edit button
@@ -282,7 +282,7 @@
     - Handle creation submission
     - _Requirements: 14_
   
-  - [ ] 8.8 Implement activity creation logic
+  - [x] 8.8 Implement activity creation logic
     - Submit activity data to API
     - Handle validation errors
     - Show loading state during creation

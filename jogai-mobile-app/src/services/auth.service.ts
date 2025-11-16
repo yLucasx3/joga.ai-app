@@ -124,22 +124,26 @@ export const authService = {
    */
   async isAuthenticated(): Promise<boolean> {
     try {
-      const token = await storageService.getAccessToken();
+      // Check if user data exists in storage
+      const user = await storageService.getUser();
       
-      if (!token) {
+      if (!user) {
+        console.log('🔍 [AuthService] No user in storage');
         return false;
       }
 
-      // Validate token with backend
-      const isValid = await authApi.validateToken();
-      
-      if (!isValid) {
-        // Clear invalid tokens
-        await storageService.clearAll();
-        return false;
-      }
-
+      console.log('🔍 [AuthService] User found in storage:', user);
       return true;
+
+      // Optional: Validate token with backend if needed
+      // const token = await storageService.getAccessToken();
+      // if (token) {
+      //   const isValid = await authApi.validateToken();
+      //   if (!isValid) {
+      //     await storageService.clearAll();
+      //     return false;
+      //   }
+      // }
     } catch (error) {
       console.error('Authentication check error:', error);
       return false;

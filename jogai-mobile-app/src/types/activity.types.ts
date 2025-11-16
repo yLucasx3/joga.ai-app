@@ -62,6 +62,8 @@ export interface Address {
   city: string;
   state: string;
   zipCode: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Location {

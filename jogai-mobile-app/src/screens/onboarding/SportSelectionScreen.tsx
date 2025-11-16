@@ -6,12 +6,14 @@ import {
   SafeAreaView,
   TextInput,
   Alert,
+  ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { Button } from '../../components/common/Button';
-import { SportGrid } from '../../components/sport/SportGrid';
+import { SportImageCard } from '../../components/sport/SportImageCard';
 import { SPORTS } from '../../constants/sports';
 import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
+import { spacing, borderRadius } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { storageService } from '../../services/storage.service';
 import { authService } from '../../services/auth.service';
@@ -54,10 +56,10 @@ export const SportSelectionScreen: React.FC<SportSelectionScreenProps> = ({
       setIsSubmitting(true);
 
       // Save preferences to backend
-      await userApi.updatePreferences({
-        sports: selectedSports,
-        notificationsEnabled: true,
-      });
+      // await userApi.updatePreferences({
+      //   sports: selectedSports,
+      //   notificationsEnabled: true,
+      // });
 
       // Save preferences locally
       await storageService.savePreferences({
@@ -68,7 +70,8 @@ export const SportSelectionScreen: React.FC<SportSelectionScreenProps> = ({
       // Mark onboarding as completed
       await authService.completeOnboarding();
 
-      // Navigation will be handled by root navigator
+      // Navigate to main app
+      navigation.replace('Main');
     } catch (error) {
       console.error('Error saving sport preferences:', error);
       Alert.alert(
@@ -88,7 +91,8 @@ export const SportSelectionScreen: React.FC<SportSelectionScreenProps> = ({
       // Mark onboarding as completed without saving preferences
       await authService.completeOnboarding();
 
-      // Navigation will be handled by root navigator
+      // Navigate to main app
+      navigation.replace('Main');
     } catch (error) {
       console.error('Error skipping onboarding:', error);
     } finally {
@@ -103,60 +107,66 @@ export const SportSelectionScreen: React.FC<SportSelectionScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Choose Your Sports</Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.title}>What do you play?</Text>
+          <TouchableOpacity onPress={handleSkip} disabled={isSubmitting}>
+            <Text style={styles.skipButton}>Skip</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.subtitle}>
-          Select the sports you're interested in to personalize your experience
+          Select one or more to personalize your experience.
         </Text>
       </View>
 
+      {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search sports..."
-          placeholderTextColor={colors.textTertiary}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
+        <View style={styles.searchInputContainer}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search for a sport..."
+            placeholderTextColor={colors.textTertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
       </View>
 
+      {/* Sports Grid */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.gridContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.grid}>
+          {filteredSports.map((sport) => (
+            <View key={sport.key} style={styles.cardWrapper}>
+              <SportImageCard
+                sport={sport}
+                isSelected={selectedSports.includes(sport.key)}
+                onPress={() => handleSelectSport(sport.key)}
+              />
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+
+      {/* Footer with Continue Button */}
       {selectedSports.length > 0 && (
-        <View style={styles.selectionInfo}>
-          <Text style={styles.selectionText}>
-            {selectedSports.length} sport{selectedSports.length !== 1 ? 's' : ''} selected
-          </Text>
+        <View style={styles.footer}>
+          <Button
+            title="Continue"
+            onPress={handleContinue}
+            loading={isSubmitting}
+            disabled={isSubmitting}
+            fullWidth
+          />
         </View>
       )}
-
-      <View style={styles.gridContainer}>
-        <SportGrid
-          sports={filteredSports}
-          selectedSports={selectedSports}
-          onSelectSport={handleSelectSport}
-          multiSelect={true}
-        />
-      </View>
-
-      <View style={styles.footer}>
-        <Button
-          title="Continue"
-          onPress={handleContinue}
-          loading={isSubmitting}
-          disabled={isSubmitting || selectedSports.length === 0}
-          fullWidth
-          style={styles.continueButton}
-        />
-
-        <Button
-          title="Skip for Now"
-          onPress={handleSkip}
-          variant="outline"
-          disabled={isSubmitting}
-          fullWidth
-        />
-      </View>
     </SafeAreaView>
   );
 };
@@ -168,14 +178,24 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
   },
   title: {
     fontSize: typography.fontSize['2xl'],
     fontWeight: typography.fontWeight.bold,
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
+  },
+  skipButton: {
+    fontSize: typography.fontSize.base,
+    color: colors.textSecondary,
+    fontWeight: typography.fontWeight.medium,
   },
   subtitle: {
     fontSize: typography.fontSize.base,
@@ -186,36 +206,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.md,
   },
-  searchInput: {
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  searchIcon: {
+    fontSize: 18,
+    marginRight: spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
     fontSize: typography.fontSize.base,
     color: colors.textPrimary,
+    padding: 0,
   },
-  selectionInfo: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  selectionText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary,
-    fontWeight: typography.fontWeight.medium,
+  scrollView: {
+    flex: 1,
   },
   gridContainer: {
-    flex: 1,
     paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -spacing.xs,
+  },
+  cardWrapper: {
+    width: '50%',
+    paddingHorizontal: spacing.xs,
   },
   footer: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
-  },
-  continueButton: {
-    marginBottom: spacing.md,
   },
 });

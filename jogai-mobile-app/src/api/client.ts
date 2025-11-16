@@ -185,9 +185,8 @@ const parseApiError = (error: AxiosError): ApiError => {
     };
   }
 
+  console.log('[Auth Client] Response: ', response.data);
   const data = response.data as any;
-
-  console.log("Response Status: ", response.status)
 
   switch (response.status) {
     case 400:

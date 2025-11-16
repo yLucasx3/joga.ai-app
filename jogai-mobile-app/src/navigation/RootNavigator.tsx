@@ -72,12 +72,35 @@ const linking: LinkingOptions<RootStackParamList> = {
  * Root Navigator Component
  */
 const RootNavigator: React.FC = () => {
-  const { isLoading } = useAuth();
+  const { isLoading, isAuthenticated } = useAuth();
+  const [isOnboardingCompleted, setIsOnboardingCompleted] = useState<boolean | null>(null);
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
 
   /**
-   * Show loading screen while checking auth status
+   * Check if onboarding is completed
    */
-  if (isLoading) {
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const completed = await storageService.isOnboardingCompleted();
+        setIsOnboardingCompleted(completed);
+      } catch (error) {
+        console.error('Error checking onboarding:', error);
+        setIsOnboardingCompleted(true); // Default to completed on error
+      } finally {
+        setIsCheckingOnboarding(false);
+      }
+    };
+
+    if (!isLoading) {
+      checkOnboarding();
+    }
+  }, [isLoading, isAuthenticated]);
+
+  /**
+   * Show loading screen while checking auth status or onboarding
+   */
+  if (isLoading || isCheckingOnboarding) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -85,10 +108,23 @@ const RootNavigator: React.FC = () => {
     );
   }
 
+  /**
+   * Determine initial route based on auth and onboarding status
+   */
+  const getInitialRouteName = (): keyof RootStackParamList => {
+    // If authenticated and onboarding not completed, show onboarding
+    if (!isOnboardingCompleted) {
+      return 'Onboarding';
+    }
+    
+    // Otherwise show main app
+    return 'Main';
+  };
+
   return (
     <NavigationContainer theme={navigationTheme} linking={linking}>
       <Stack.Navigator
-        initialRouteName="Main"
+        initialRouteName={getInitialRouteName()}
         screenOptions={{
           headerShown: false,
           cardStyle: { backgroundColor: colors.background },
@@ -113,7 +149,7 @@ const RootNavigator: React.FC = () => {
           name="Onboarding" 
           component={SportSelectionScreen}
           options={{
-            presentation: 'modal',
+            presentation: 'card',
             gestureEnabled: false,
           }}
         />

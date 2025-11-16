@@ -16,9 +16,6 @@ import { DraggableBottomSheet } from '@/components/common';
 
 <DraggableBottomSheet
   initialSnapPoint="MID"
-  onSnapPointChange={(snapPoint) => {
-    console.log('Novo snap point:', snapPoint);
-  }}
 >
   <YourContent />
 </DraggableBottomSheet>
