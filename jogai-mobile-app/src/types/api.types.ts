@@ -29,6 +29,12 @@ export interface RegisterRequest {
   phone?: string;
 }
 
+export interface RegisterResponse {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
@@ -50,10 +56,10 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
-  avatarUrl?: string;
-  preferences: UserPreferences;
-  createdAt: string;
-  updatedAt: string;
+  // avatarUrl?: string;
+  // preferences: UserPreferences;
+  // createdAt: string;
+  // updatedAt: string;
 }
 
 export interface UserPreferences {

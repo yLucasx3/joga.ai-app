@@ -5,6 +5,7 @@ import {
   RegisterRequest,
   RefreshTokenRequest,
   RefreshTokenResponse,
+  RegisterResponse,
 } from '../types/api.types';
 
 /**
@@ -22,8 +23,8 @@ export const authApi = {
   /**
    * Register a new user
    */
-  async register(userData: RegisterRequest): Promise<LoginResponse> {
-    const response = await authClient.post<LoginResponse>('/auth/register', userData);
+  async register(userData: RegisterRequest): Promise<RegisterResponse> {
+    const response = await authClient.post<RegisterResponse>('/auth/register', userData);
     return response.data;
   },
 

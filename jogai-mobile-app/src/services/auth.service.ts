@@ -17,17 +17,19 @@ export const authService = {
   async login(credentials: LoginRequest): Promise<User> {
     try {
       const response = await authApi.login(credentials);
+
+      const { accessToken, refreshToken } = response;
       
       // Store tokens securely
-      await storageService.saveTokens(response.accessToken, response.refreshToken);
+      await storageService.saveTokens(accessToken, refreshToken);
       
       // Store user data
-      await storageService.saveUser(response.user);
+      // await storageService.saveUser(response.user);
       
-      // Store user preferences
-      if (response.user.preferences) {
-        await storageService.savePreferences(response.user.preferences);
-      }
+      // // Store user preferences
+      // if (response.user.preferences) {
+      //   await storageService.savePreferences(response.user.preferences);
+      // }
 
       return response.user;
     } catch (error) {
@@ -39,25 +41,29 @@ export const authService = {
   /**
    * Register new user and store tokens
    */
-  async register(userData: RegisterRequest): Promise<User> {
+  async register(userData: RegisterRequest): Promise<User | null> {
     try {
-      const response = await authApi.register(userData);
+      const user = await authApi.register(userData);
+      const { id, name, email } = user;
       
+
+      console.log('[AuthService] register: ', id, name, email)
       // Store tokens securely
-      await storageService.saveTokens(response.accessToken, response.refreshToken);
+      // await storageService.saveTokens(response.accessToken, response.refreshToken);
       
       // Store user data
-      await storageService.saveUser(response.user);
+      await storageService.saveUser({ id, email });
       
       // Store user preferences (if any)
-      if (response.user.preferences) {
-        await storageService.savePreferences(response.user.preferences);
-      }
+      // if (response.user.preferences) {
+      //   await storageService.savePreferences(response.user.preferences);
+      // }
 
-      return response.user;
+      return user;
     } catch (error) {
       console.error('Registration error:', error);
-      throw error;
+      return null
+      // throw error;
     }
   },
 
