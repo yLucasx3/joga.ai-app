@@ -1,3 +1,7 @@
 .vscode
 
 jogai-api
+.kiro/specs/auth-refactoring/README.md
+.kiro/specs/auth-refactoring/design.md
+.kiro/specs/auth-refactoring/requirements.md
+.kiro/specs/auth-refactoring/tasks.md

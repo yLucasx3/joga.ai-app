@@ -72,41 +72,18 @@ const linking: LinkingOptions<RootStackParamList> = {
  * Root Navigator Component
  */
 const RootNavigator: React.FC = () => {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading: authIsLoading, isAuthenticated } = useAuth();
   const [isOnboardingCompleted, setIsOnboardingCompleted] = useState<boolean | null>(null);
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
-
-  /**
-   * Check if onboarding is completed
-   */
-  useEffect(() => {
-    const checkOnboarding = async () => {
-      try {
-        const completed = await storageService.isOnboardingCompleted();
-        setIsOnboardingCompleted(completed);
-      } catch (error) {
-        console.error('Error checking onboarding:', error);
-        setIsOnboardingCompleted(true); // Default to completed on error
-      } finally {
-        setIsCheckingOnboarding(false);
-      }
-    };
-
-    if (!isLoading) {
-      checkOnboarding();
-    }
-  }, [isLoading, isAuthenticated]);
-
-  /**
-   * Show loading screen while checking auth status or onboarding
-   */
-  if (isLoading || isCheckingOnboarding) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
+  
+  // Use a ref to track if we've already initialized
+  const hasInitialized = React.useRef(false);
+  
+  // Separate loading state to prevent re-renders
+  const [isInitializing, setIsInitializing] = React.useState(true);
+  
+  // Only use authIsLoading for initial load
+  const isLoading = hasInitialized.current ? false : authIsLoading;
 
   /**
    * Determine initial route based on auth and onboarding status
@@ -120,6 +97,49 @@ const RootNavigator: React.FC = () => {
     // Otherwise show main app
     return 'Main';
   };
+
+  /**
+   * Check if onboarding is completed - ONLY ONCE on mount
+   */
+  useEffect(() => {
+    const initialize = async () => {
+      try {
+        // Wait for auth to finish loading first
+        if (authIsLoading) {
+          return;
+        }
+
+        if (!hasInitialized.current) {
+          hasInitialized.current = true;
+        }
+
+        const completed = await storageService.isOnboardingCompleted();
+        setIsOnboardingCompleted(completed);
+        setIsCheckingOnboarding(false);
+        setIsInitializing(false);
+      } catch (error) {
+        console.error('Error checking onboarding:', error);
+        setIsOnboardingCompleted(true); // Default to completed on error
+        setIsCheckingOnboarding(false);
+        setIsInitializing(false);
+      }
+    };
+
+    if (!authIsLoading && isCheckingOnboarding) {
+      initialize();
+    }
+  }, [authIsLoading, isCheckingOnboarding, isAuthenticated]); // ✅ Só executa quando necessário
+
+  /**
+   * Show loading screen while checking auth status or onboarding
+   */
+  if (isInitializing || isCheckingOnboarding) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer theme={navigationTheme} linking={linking}>
@@ -139,9 +159,18 @@ const RootNavigator: React.FC = () => {
           component={AuthNavigator}
           options={{
             presentation: 'modal',
-            gestureEnabled: true,
+            gestureEnabled: false, // ✅ Desabilita gesto de fechar
             gestureDirection: 'vertical',
           }}
+          listeners={() => ({
+            beforeRemove: (e) => {
+              // Prevent automatic close on state changes
+              const action = e.data.action;
+              if (action.type !== 'GO_BACK' && action.type !== 'NAVIGATE') {
+                e.preventDefault();
+              }
+            },
+          })}
         />
         
         {/* Onboarding flow - shown after first login */}

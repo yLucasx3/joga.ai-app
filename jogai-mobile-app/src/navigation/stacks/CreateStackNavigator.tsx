@@ -12,8 +12,8 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 
 // Import screens
-import SelectCourtScreen from '../../screens/court/SelectCourtScreen';
-import SelectSportScreen from '../../screens/court/SelectSportScreen';
+import SelectSportForCreationScreen from '../../screens/activity/SelectSportForCreationScreen';
+import SelectFieldScreen from '../../screens/court/SelectCourtScreen';
 import CreateActivityScreen from '../../screens/activity/CreateActivityScreen';
 import ReviewActivityScreen from '../../screens/activity/ReviewActivityScreen';
 
@@ -25,7 +25,7 @@ const Stack = createStackNavigator<CreateStackParamList>();
 const CreateStackNavigator: React.FC = () => {
   return (
     <Stack.Navigator
-      initialRouteName="SelectCourt"
+      initialRouteName="SelectSport"
       screenOptions={{
         headerStyle: {
           backgroundColor: colors.white,
@@ -44,19 +44,19 @@ const CreateStackNavigator: React.FC = () => {
       }}
     >
       <Stack.Screen
-        name="SelectCourt"
-        component={SelectCourtScreen}
+        name="SelectSport"
+        component={SelectSportForCreationScreen}
         options={{
-          title: 'Select Court',
+          title: 'Select Sport',
           headerShown: true,
         }}
       />
       
       <Stack.Screen
-        name="SelectSport"
-        component={SelectSportScreen}
+        name="SelectField"
+        component={SelectFieldScreen}
         options={{
-          title: 'Select Sport',
+          title: 'Select Field',
           headerShown: true,
         }}
       />

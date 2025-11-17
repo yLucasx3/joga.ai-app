@@ -24,10 +24,11 @@ import { Button } from '../../components/common/Button';
 import { DatePicker } from '../../components/forms/DatePicker';
 import { TimePicker } from '../../components/forms/TimePicker';
 import { Slider } from '../../components/forms/Slider';
-import { courtService } from '../../services/court.service';
+import { fieldService } from '../../services/field.service';
 import { getSportByKey } from '../../constants/sports';
 import { CreateStackParamList, CreateActivityData } from '../../navigation/types';
 import { addDays, setHours, setMinutes } from 'date-fns';
+import { Field } from '../../types/activity.types';
 
 type NavigationProp = NativeStackNavigationProp<CreateStackParamList, 'CreateActivity'>;
 type ScreenRouteProp = RouteProp<CreateStackParamList, 'CreateActivity'>;
@@ -35,9 +36,9 @@ type ScreenRouteProp = RouteProp<CreateStackParamList, 'CreateActivity'>;
 const CreateActivityScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<ScreenRouteProp>();
-  const { courtId, sportKey } = route.params;
+  const { fieldId, sportKey } = route.params;
 
-  const [court, setCourt] = useState<any>(null);
+  const [field, setField] = useState<Field | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Form state
@@ -56,21 +57,21 @@ const CreateActivityScreen: React.FC = () => {
   const sport = getSportByKey(sportKey);
 
   useEffect(() => {
-    fetchCourtDetails();
-  }, [courtId]);
+    fetchFieldDetails();
+  }, [fieldId]);
 
-  const fetchCourtDetails = async () => {
+  const fetchFieldDetails = async () => {
     try {
       setLoading(true);
-      const courtData = await courtService.getCourtById(courtId);
-      setCourt(courtData);
+      const fieldData = await fieldService.getFieldById(fieldId);
+      setField(fieldData);
       
       // Set default title
       if (sport) {
         setTitle(`${sport.name} Game`);
       }
     } catch (error) {
-      console.error('Error fetching court details:', error);
+      console.error('Error fetching field details:', error);
     } finally {
       setLoading(false);
     }
@@ -87,8 +88,8 @@ const CreateActivityScreen: React.FC = () => {
       newErrors.maxPlayers = 'Minimum 2 players required';
     }
 
-    if (maxPlayers > court?.capacity) {
-      newErrors.maxPlayers = `Maximum ${court?.capacity} players allowed`;
+    if (field?.capacity && maxPlayers > field.capacity) {
+      newErrors.maxPlayers = `Maximum ${field.capacity} players allowed`;
     }
 
     // Validate time range
@@ -122,9 +123,8 @@ const CreateActivityScreen: React.FC = () => {
       title: title.trim(),
       description: description.trim() || undefined,
       sportKey,
-      fieldId: court.id,
-      courtId: court.id,
-      courtName: court.name,
+      fieldId: field!.id,
+      fieldName: field!.name,
       type: activityType,
       startDate: start,
       endDate: end,
@@ -158,7 +158,7 @@ const CreateActivityScreen: React.FC = () => {
           <Text style={styles.sportIcon}>{sport?.icon}</Text>
           <View style={styles.headerText}>
             <Text style={styles.sportName}>{sport?.name}</Text>
-            <Text style={styles.courtName}>{court?.name}</Text>
+            <Text style={styles.fieldName}>{field?.name}</Text>
           </View>
         </View>
 
@@ -256,10 +256,10 @@ const CreateActivityScreen: React.FC = () => {
             value={maxPlayers}
             onChange={setMaxPlayers}
             min={2}
-            max={court?.capacity || 50}
+            max={field?.capacity || 50}
             step={1}
             error={errors.maxPlayers}
-            helperText={`Court capacity: ${court?.capacity || 'N/A'} players`}
+            helperText={`Field capacity: ${field?.capacity || 'N/A'} players`}
           />
 
           {/* Share Link Expiration (Public only) */}
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
-  courtName: {
+  fieldName: {
     fontSize: typography.fontSize.base,
     color: colors.textSecondary,
   },

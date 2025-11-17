@@ -55,7 +55,6 @@ const AuthNavigator: React.FC = () => {
         headerTitleStyle: {
           fontWeight: '600',
         },
-        headerBackTitleVisible: false,
         cardStyle: { backgroundColor: colors.background },
         ...TransitionPresets.SlideFromRightIOS,
       }}

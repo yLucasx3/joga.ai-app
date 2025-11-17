@@ -25,6 +25,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+
+
   /**
    * Initialize authentication state on app start
    * Non-blocking - allows app to load even if not authenticated
@@ -66,18 +68,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Login user
    */
   const login = useCallback(async (credentials: LoginRequest) => {
+    setIsLoading(true);
+    
     try {
-      setIsLoading(true);
-      
       const userData = await authService.login(credentials);
       
       setUser(userData);
       setIsAuthenticated(true);
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    } finally {
       setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      throw error;
     }
   }, []);
 
@@ -85,18 +86,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Register new user
    */
   const register = useCallback(async (userData: RegisterRequest) => {
+    setIsLoading(true);
+    
     try {
-      setIsLoading(true);
-      
       const newUser = await authService.register(userData);
       
       setUser(newUser);
       setIsAuthenticated(true);
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
-    } finally {
       setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      throw error;
     }
   }, []);
 

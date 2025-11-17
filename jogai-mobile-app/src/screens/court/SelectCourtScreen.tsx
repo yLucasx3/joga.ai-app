@@ -15,7 +15,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import MapView, { Marker, Region } from 'react-native-maps';
 import { colors } from '../../theme/colors';
@@ -23,24 +23,27 @@ import { spacing, borderRadius, shadows } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { ProtectedScreen } from '../../components/auth/ProtectedScreen';
 import { Input } from '../../components/common/Input';
-import { CourtCard } from '../../components/court/CourtCard';
+import { FieldCard } from '../../components/field/FieldCard';
 import { EmptyState } from '../../components/common/EmptyState';
-import { courtService } from '../../services/court.service';
+import { fieldService } from '../../services/field.service';
 import { locationService } from '../../services/location.service';
 import { useLocation } from '../../hooks/useLocation';
-import { Court } from '../../types/activity.types';
+import { Field } from '../../types/activity.types';
 import { CreateStackParamList } from '../../navigation/types';
 
-type NavigationProp = NativeStackNavigationProp<CreateStackParamList, 'SelectCourt'>;
+type NavigationProp = NativeStackNavigationProp<CreateStackParamList, 'SelectField'>;
+type ScreenRouteProp = RouteProp<CreateStackParamList, 'SelectField'>;
 
 type ViewMode = 'map' | 'list';
 
-const SelectCourtScreen: React.FC = () => {
+const SelectFieldScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<ScreenRouteProp>();
+  const { sportKey } = route.params;
   const { location, loading: locationLoading } = useLocation();
 
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [courts, setCourts] = useState<Court[]>([]);
+  const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -58,109 +61,86 @@ const SelectCourtScreen: React.FC = () => {
     }
   }, [location]);
 
-  // Fetch courts
-  const fetchCourts = useCallback(async () => {
+  // Fetch fields
+  const fetchFields = useCallback(async () => {
     try {
       setLoading(true);
       
       if (location) {
-        // Fetch nearby courts
-        const response = await courtService.getNearbyCourts(
+        // Fetch nearby fields filtered by sport
+        const response = await fieldService.getNearbyFields(
           location.latitude,
           location.longitude,
-          10, // 10km radius
-          undefined,
-          { page: 1, limit: 50 }
+          { 
+            radiusInKm: 10, // 10km radius
+            sportKey: sportKey // Filter by selected sport
+          }
         );
 
         // Calculate distances
-        const courtsWithDistance = response.data.map((court) => {
-          const courtLocation = {
-            latitude: court.establishment.address.latitude || location.latitude,
-            longitude: court.establishment.address.longitude || location.longitude,
+        const fieldsWithDistance = response.data.map((field) => {
+          const fieldLocation = {
+            latitude: field.establishment.address.latitude || location.latitude,
+            longitude: field.establishment.address.longitude || location.longitude,
           };
-          const distance = locationService.calculateDistance(location, courtLocation);
-          return { ...court, distance };
+          const distance = locationService.calculateDistance(location, fieldLocation);
+          return { ...field, distance };
         });
 
-        setCourts(courtsWithDistance);
-      } else {
-        // Fetch all courts if location not available
-        const response = await courtService.getCourts(undefined, { page: 1, limit: 50 });
-        setCourts(response.data);
+        setFields(fieldsWithDistance);
       }
     } catch (error) {
-      console.error('Error fetching courts:', error);
+      console.error('Error fetching fields:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [location]);
+  }, [location, sportKey]);
 
-  // Search courts
-  const searchCourts = useCallback(async (query: string) => {
+  // Search fields by address
+  const searchFields = useCallback(async (query: string) => {
     if (!query.trim()) {
-      fetchCourts();
+      fetchFields();
       return;
     }
 
-    try {
-      setLoading(true);
-      const response = await courtService.searchCourts(
-        query,
-        undefined,
-        { page: 1, limit: 50 }
-      );
-
-      // Calculate distances if location available
-      if (location) {
-        const courtsWithDistance = response.data.map((court) => {
-          const courtLocation = {
-            latitude: court.establishment.address.latitude || location.latitude,
-            longitude: court.establishment.address.longitude || location.longitude,
-          };
-          const distance = locationService.calculateDistance(location, courtLocation);
-          return { ...court, distance };
-        });
-        setCourts(courtsWithDistance);
-      } else {
-        setCourts(response.data);
-      }
-    } catch (error) {
-      console.error('Error searching courts:', error);
-    } finally {
-      setLoading(false);
+    // For now, filter locally - API search can be added later
+    if (location) {
+      fetchFields();
     }
-  }, [location, fetchCourts]);
+  }, [location, fetchFields]);
 
   useEffect(() => {
-    fetchCourts();
-  }, [fetchCourts]);
+    fetchFields();
+  }, [fetchFields]);
 
   // Handle search with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchQuery) {
-        searchCourts(searchQuery);
+        searchFields(searchQuery);
       }
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, searchCourts]);
+  }, [searchQuery, searchFields]);
 
-  const handleCourtSelect = (court: Court) => {
-    navigation.navigate('SelectSport', { courtId: court.id });
+  const handleFieldSelect = (field: Field) => {
+    navigation.navigate('CreateActivity', { 
+      fieldId: field.id,
+      sportKey: sportKey
+    });
   };
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchCourts();
+    fetchFields();
   };
 
-  const renderCourtCard = ({ item }: { item: Court }) => (
-    <CourtCard
-      court={item}
-      onPress={() => handleCourtSelect(item)}
+  const renderFieldCard = ({ item }: { item: Field }) => (
+    <FieldCard
+      field={item}
+      onPress={() => handleFieldSelect(item)}
       distance={(item as any).distance}
     />
   );
@@ -183,19 +163,19 @@ const SelectCourtScreen: React.FC = () => {
         showsUserLocation
         showsMyLocationButton
       >
-        {courts.map((court) => {
-          const courtLocation = {
-            latitude: court.establishment.address.latitude || mapRegion.latitude,
-            longitude: court.establishment.address.longitude || mapRegion.longitude,
+        {fields.map((field) => {
+          const fieldLocation = {
+            latitude: field.establishment.address.latitude || mapRegion.latitude,
+            longitude: field.establishment.address.longitude || mapRegion.longitude,
           };
 
           return (
             <Marker
-              key={court.id}
-              coordinate={courtLocation}
-              title={court.name}
-              description={court.establishment.name}
-              onCalloutPress={() => handleCourtSelect(court)}
+              key={field.id}
+              coordinate={fieldLocation}
+              title={field.name}
+              description={field.establishment.name}
+              onCalloutPress={() => handleFieldSelect(field)}
             />
           );
         })}
@@ -208,20 +188,20 @@ const SelectCourtScreen: React.FC = () => {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading courts...</Text>
+          <Text style={styles.loadingText}>Loading fields...</Text>
         </View>
       );
     }
 
-    if (courts.length === 0) {
+    if (fields.length === 0) {
       return (
         <EmptyState
           icon="🏟️"
-          title="No courts found"
+          title="No fields found"
           description={
             searchQuery
               ? 'Try adjusting your search'
-              : 'No courts available in your area'
+              : 'No fields available in your area'
           }
         />
       );
@@ -229,8 +209,8 @@ const SelectCourtScreen: React.FC = () => {
 
     return (
       <FlatList
-        data={courts}
-        renderItem={renderCourtCard}
+        data={fields}
+        renderItem={renderFieldCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshing={refreshing}
@@ -355,4 +335,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SelectCourtScreen;
+export default SelectFieldScreen;

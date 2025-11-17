@@ -38,7 +38,7 @@ export interface RegisterResponse {
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
-  user: User;
+  sessionId: string;
 }
 
 export interface RefreshTokenRequest {
@@ -91,5 +91,20 @@ export interface PaginatedResponse<T> {
     limit: number;
     total: number;
     totalPages: number;
+  };
+}
+
+// Cursor Pagination (para Fields)
+export interface CursorPaginationParams {
+  cursor?: string;
+  limit?: number;
+}
+
+export interface CursorPaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    nextCursor?: string;
+    hasMore: boolean;
+    limit: number;
   };
 }

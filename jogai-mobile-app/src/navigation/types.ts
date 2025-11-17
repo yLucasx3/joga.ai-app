@@ -53,9 +53,9 @@ export type HomeStackParamList = {
  * Handles activity creation flow
  */
 export type CreateStackParamList = {
-  SelectCourt: undefined;
-  SelectSport: { courtId: string };
-  CreateActivity: { courtId: string; sportKey: string };
+  SelectSport: undefined;
+  SelectField: { sportKey: string };
+  CreateActivity: { fieldId: string; sportKey: string };
   ReviewActivity: { activityData: CreateActivityData };
 };
 
@@ -76,8 +76,7 @@ export interface CreateActivityData {
   description?: string;
   sportKey: string;
   fieldId: string;
-  courtId: string;
-  courtName: string;
+  fieldName: string;
   type: 'PUBLIC' | 'PRIVATE';
   startDate: Date;
   endDate: Date;

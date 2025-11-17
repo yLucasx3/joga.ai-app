@@ -7,7 +7,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -63,6 +62,7 @@ interface RegisterScreenProps {
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const { register } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const {
     control,
@@ -84,10 +84,10 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   const acceptTerms = watch('acceptTerms');
 
   const onSubmit = async (data: RegisterFormData) => {
+    setIsSubmitting(true);
+    setErrorMessage('');
+    
     try {
-      setIsSubmitting(true);
-      
-      // Prepare registration data
       const { name, email, password, phone } = data;
       const registrationData = {
         name,
@@ -97,18 +97,12 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
       };
 
       await register(registrationData);
-      
-      // After successful registration, navigate to onboarding
-      // This will be handled by the root navigator
     } catch (error) {
       const apiError = error as ApiError;
-      Alert.alert(
-        'Registration Failed',
-        apiError.message || 'Unable to create account. Please try again.',
-        [{ text: 'OK' }]
-      );
-    } finally {
       setIsSubmitting(false);
+      setErrorMessage(
+        apiError.message || 'Unable to create account. Please try again.'
+      );
     }
   };
 
@@ -130,6 +124,13 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Sign up to get started</Text>
         </View>
+
+        {errorMessage ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorIcon}>⚠️</Text>
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        ) : null}
 
         <View style={styles.form}>
           <Controller
@@ -366,5 +367,25 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     color: colors.primary,
     fontWeight: typography.fontWeight.semiBold,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.badgeError,
+    padding: spacing.md,
+    borderRadius: 8,
+    marginBottom: spacing.lg,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.error,
+  },
+  errorIcon: {
+    fontSize: 20,
+    marginRight: spacing.sm,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: typography.fontSize.sm,
+    color: colors.badgeErrorText,
+    lineHeight: 20,
   },
 });

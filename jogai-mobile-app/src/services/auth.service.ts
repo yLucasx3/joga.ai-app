@@ -17,23 +17,20 @@ export const authService = {
   async login(credentials: LoginRequest): Promise<User> {
     try {
       const response = await authApi.login(credentials);
-
       const { accessToken, refreshToken } = response;
       
-      // Store tokens securely
+      // Store tokens first
       await storageService.saveTokens(accessToken, refreshToken);
       
-      // Store user data
-      // await storageService.saveUser(response.user);
+      // Now fetch user data with the new token
+      const { userApi } = await import('../api/user.api');
+      const user = await userApi.getCurrentUser();
       
-      // // Store user preferences
-      // if (response.user.preferences) {
-      //   await storageService.savePreferences(response.user.preferences);
-      // }
+      // Store user data
+      await storageService.saveUser(user);
 
-      return response.user;
+      return user;
     } catch (error) {
-      console.error('Login error:', error);
       throw error;
     }
   },
@@ -41,29 +38,16 @@ export const authService = {
   /**
    * Register new user and store tokens
    */
-  async register(userData: RegisterRequest): Promise<User | null> {
+  async register(userData: RegisterRequest): Promise<User> {
     try {
       const user = await authApi.register(userData);
       const { id, name, email } = user;
       
-
-      console.log('[AuthService] register: ', id, name, email)
-      // Store tokens securely
-      // await storageService.saveTokens(response.accessToken, response.refreshToken);
+      await storageService.saveUser({ id, name, email });
       
-      // Store user data
-      await storageService.saveUser({ id, email });
-      
-      // Store user preferences (if any)
-      // if (response.user.preferences) {
-      //   await storageService.savePreferences(response.user.preferences);
-      // }
-
       return user;
     } catch (error) {
-      console.error('Registration error:', error);
-      return null
-      // throw error;
+      throw error;
     }
   },
 
@@ -124,28 +108,9 @@ export const authService = {
    */
   async isAuthenticated(): Promise<boolean> {
     try {
-      // Check if user data exists in storage
       const user = await storageService.getUser();
-      
-      if (!user) {
-        console.log('🔍 [AuthService] No user in storage');
-        return false;
-      }
-
-      console.log('🔍 [AuthService] User found in storage:', user);
-      return true;
-
-      // Optional: Validate token with backend if needed
-      // const token = await storageService.getAccessToken();
-      // if (token) {
-      //   const isValid = await authApi.validateToken();
-      //   if (!isValid) {
-      //     await storageService.clearAll();
-      //     return false;
-      //   }
-      // }
+      return !!user;
     } catch (error) {
-      console.error('Authentication check error:', error);
       return false;
     }
   },

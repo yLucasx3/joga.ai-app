@@ -23,8 +23,8 @@ import { Input } from '../../components/common/Input';
 import { SportGrid } from '../../components/sport/SportGrid';
 import { EmptyState } from '../../components/common/EmptyState';
 import { Button } from '../../components/common/Button';
-import { courtService } from '../../services/court.service';
-import { Sport } from '../../types/activity.types';
+import { fieldService } from '../../services/field.service';
+import { Sport, Field } from '../../types/activity.types';
 import { CreateStackParamList } from '../../navigation/types';
 
 type NavigationProp = NativeStackNavigationProp<CreateStackParamList, 'SelectSport'>;
@@ -33,9 +33,9 @@ type ScreenRouteProp = RouteProp<CreateStackParamList, 'SelectSport'>;
 const SelectSportScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<ScreenRouteProp>();
-  const { courtId } = route.params;
+  const { fieldId } = route.params;
 
-  const [court, setCourt] = useState<any>(null);
+  const [field, setField] = useState<Field | null>(null);
   const [availableSports, setAvailableSports] = useState<Sport[]>([]);
   const [filteredSports, setFilteredSports] = useState<Sport[]>([]);
   const [selectedSport, setSelectedSport] = useState<string>('');
@@ -44,8 +44,8 @@ const SelectSportScreen: React.FC = () => {
   const [activityType, setActivityType] = useState<'PUBLIC' | 'PRIVATE'>('PUBLIC');
 
   useEffect(() => {
-    fetchCourtDetails();
-  }, [courtId]);
+    fetchFieldDetails();
+  }, [fieldId]);
 
   useEffect(() => {
     if (searchQuery) {
@@ -58,15 +58,16 @@ const SelectSportScreen: React.FC = () => {
     }
   }, [searchQuery, availableSports]);
 
-  const fetchCourtDetails = async () => {
+  const fetchFieldDetails = async () => {
     try {
       setLoading(true);
-      const courtData = await courtService.getCourtById(courtId);
-      setCourt(courtData);
-      setAvailableSports(courtData.sports);
-      setFilteredSports(courtData.sports);
+      const fieldData = await fieldService.getFieldById(fieldId);
+      setField(fieldData);
+      const sports = fieldService.getAvailableSports(fieldData);
+      setAvailableSports(sports);
+      setFilteredSports(sports);
     } catch (error) {
-      console.error('Error fetching court details:', error);
+      console.error('Error fetching field details:', error);
     } finally {
       setLoading(false);
     }
@@ -77,9 +78,9 @@ const SelectSportScreen: React.FC = () => {
   };
 
   const handleContinue = () => {
-    if (selectedSport && court) {
+    if (selectedSport && field) {
       navigation.navigate('CreateActivity', {
-        courtId: court.id,
+        fieldId: field.id,
         sportKey: selectedSport,
       });
     }
@@ -96,13 +97,13 @@ const SelectSportScreen: React.FC = () => {
     );
   }
 
-  if (!court) {
+  if (!field) {
     return (
       <ProtectedScreen>
         <EmptyState
           icon="❌"
-          title="Court not found"
-          description="Unable to load court details"
+          title="Field not found"
+          description="Unable to load field details"
         />
       </ProtectedScreen>
     );
@@ -116,10 +117,10 @@ const SelectSportScreen: React.FC = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Court Info */}
-          <View style={styles.courtInfo}>
-            <Text style={styles.courtName}>{court.name}</Text>
-            <Text style={styles.establishmentName}>{court.establishment.name}</Text>
+          {/* Field Info */}
+          <View style={styles.fieldInfo}>
+            <Text style={styles.fieldName}>{field.name}</Text>
+            <Text style={styles.establishmentName}>{field.establishment.name}</Text>
           </View>
 
           {/* Search Bar */}
@@ -209,13 +210,13 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     color: colors.textSecondary,
   },
-  courtInfo: {
+  fieldInfo: {
     padding: spacing.md,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  courtName: {
+  fieldName: {
     fontSize: typography.fontSize.xl,
     fontWeight: typography.fontWeight.bold,
     color: colors.textPrimary,

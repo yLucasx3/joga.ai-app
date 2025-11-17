@@ -55,12 +55,12 @@ const ReviewActivityScreen: React.FC = () => {
 
   const handleEdit = (section: 'sport' | 'details' | 'datetime') => {
     if (section === 'sport') {
-      // Navigate back to court selection
-      navigation.navigate('SelectCourt');
+      // Navigate back to sport selection
+      navigation.navigate('SelectSport');
     } else if (section === 'details' || section === 'datetime') {
       // Navigate back to create activity form
       navigation.navigate('CreateActivity', {
-        courtId: activityData.courtId,
+        fieldId: activityData.fieldId,
         sportKey: activityData.sportKey,
       });
     }
@@ -95,11 +95,7 @@ const ReviewActivityScreen: React.FC = () => {
               navigation.reset({
                 index: 0,
                 routes: [
-                  { name: 'SelectCourt' },
-                  {
-                    name: 'SelectCourt',
-                    params: undefined,
-                  },
+                  { name: 'SelectSport' },
                 ],
               });
             },
@@ -151,8 +147,8 @@ const ReviewActivityScreen: React.FC = () => {
           <View style={styles.infoRow}>
             <Text style={styles.icon}>🏟️</Text>
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Court</Text>
-              <Text style={styles.infoValue}>{activityData.courtName}</Text>
+              <Text style={styles.infoLabel}>Field</Text>
+              <Text style={styles.infoValue}>{activityData.fieldName}</Text>
             </View>
           </View>
         </Card>

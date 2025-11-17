@@ -7,7 +7,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,6 +40,7 @@ interface LoginScreenProps {
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const { login } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const {
     control,
@@ -55,19 +55,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    setIsSubmitting(true);
+    setErrorMessage('');
+    
     try {
-      setIsSubmitting(true);
       await login(data);
-      // Navigation will be handled by the root navigator based on auth state
     } catch (error) {
       const apiError = error as ApiError;
-      Alert.alert(
-        'Login Failed',
-        apiError.message || 'Unable to login. Please check your credentials and try again.',
-        [{ text: 'OK' }]
-      );
-    } finally {
       setIsSubmitting(false);
+      setErrorMessage(
+        apiError.message || 'Unable to login. Please check your credentials and try again.'
+      );
     }
   };
 
@@ -92,6 +90,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           <Text style={styles.title}>Welcome Back!</Text>
           <Text style={styles.subtitle}>Sign in to continue</Text>
         </View>
+
+        {errorMessage ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorIcon}>⚠️</Text>
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        ) : null}
 
         <View style={styles.form}>
           <Controller
@@ -214,5 +219,25 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     color: colors.primary,
     fontWeight: typography.fontWeight.semiBold,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.badgeError,
+    padding: spacing.md,
+    borderRadius: 8,
+    marginBottom: spacing.lg,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.error,
+  },
+  errorIcon: {
+    fontSize: 20,
+    marginRight: spacing.sm,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: typography.fontSize.sm,
+    color: colors.badgeErrorText,
+    lineHeight: 20,
   },
 });

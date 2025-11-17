@@ -111,18 +111,22 @@ export interface ActivityFilters {
   search?: string;
 }
 
-// Court Types
-export interface Court {
+// Field Types
+export type FieldStatus = 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
+
+export interface Field {
   id: string;
+  establishmentId: string;
   name: string;
   description?: string;
   capacity: number;
   dimensions?: FieldDimensions;
-  imageUrl?: string;
+  amenities: string[]; // Array of amenity keys
+  status: FieldStatus;
+  pricingRules?: PricingRule[];
   establishment: Establishment;
-  sports: Sport[];
-  amenities: Amenity[];
-  pricingRules: PricingRule[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FieldDimensions {
@@ -132,10 +136,15 @@ export interface FieldDimensions {
 }
 
 export interface Sport {
+  id: string;
   key: string;
   name: string;
-  icon: string;
-  imageUrl?: string;
+  category?: string;
+  icon?: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Amenity {
@@ -147,15 +156,21 @@ export interface Amenity {
 export interface PricingRule {
   period: 'PEAK' | 'OFF_PEAK' | 'WEEKEND' | 'HOLIDAY';
   pricePerHour: number;
-  minDuration: number;
-  maxDuration: number;
+  currency: string;
+  minDuration?: number;
+  maxDuration?: number;
 }
 
-export interface CourtFilters {
-  sportKeys?: string[];
-  latitude?: number;
-  longitude?: number;
-  radius?: number;
-  search?: string;
-  amenities?: string[];
+export interface FieldFilters {
+  latitude: number;
+  longitude: number;
+  radiusInKm?: number;
+  status?: FieldStatus;
+  sportKey?: string;
+  establishmentId?: string;
+}
+
+export interface CursorPaginationParams {
+  cursor?: string;
+  limit?: number;
 }
