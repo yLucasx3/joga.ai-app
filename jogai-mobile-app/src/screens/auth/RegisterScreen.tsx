@@ -17,39 +17,37 @@ import { Input } from '../../components/common/Input';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { ApiError } from '../../types/api.types';
+import { ApiError, RegisterRequest } from '../../types/api.types';
 
-// Validation schema
+// Validation schema aligned with backend RegisterRequest
 const registerSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Name is required')
-    .min(2, 'Name must be at least 2 characters')
-    .max(100, 'Name must be less than 100 characters'),
   email: z
     .string()
-    .min(1, 'Email is required')
-    .email('Please enter a valid email address'),
+    .min(1, 'Email é obrigatório')
+    .email('Por favor, insira um email válido'),
+  password: z
+    .string()
+    .min(1, 'Senha é obrigatória')
+    .min(8, 'A senha deve ter no mínimo 8 caracteres')
+    .max(100, 'A senha deve ter menos de 100 caracteres'),
+  confirmPassword: z
+    .string()
+    .min(1, 'Por favor, confirme sua senha'),
   phone: z
     .string()
     .optional()
     .refine(
-      (val) => !val || /^\+?[\d\s\-()]+$/.test(val),
-      'Please enter a valid phone number'
+      (val) => !val || val.trim() === '' || /^\+?[\d\s\-()]+$/.test(val),
+      'Por favor, insira um número de telefone válido'
     ),
-  password: z
+  organizationName: z
     .string()
-    .min(1, 'Password is required')
-    .min(6, 'Password must be at least 6 characters')
-    .max(100, 'Password must be less than 100 characters'),
-  confirmPassword: z
-    .string()
-    .min(1, 'Please confirm your password'),
+    .optional(),
   acceptTerms: z
     .boolean()
-    .refine((val) => val === true, 'You must accept the terms of service'),
+    .refine((val) => val === true, 'Você deve aceitar os termos de serviço'),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
+  message: 'As senhas não coincidem',
   path: ['confirmPassword'],
 });
 
@@ -68,40 +66,48 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     control,
     handleSubmit,
     formState: { errors },
-    watch,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: '',
       email: '',
-      phone: '',
       password: '',
       confirmPassword: '',
+      phone: '',
+      organizationName: '',
       acceptTerms: false,
     },
   });
-
-  const acceptTerms = watch('acceptTerms');
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsSubmitting(true);
     setErrorMessage('');
     
     try {
-      const { name, email, password, phone } = data;
-      const registrationData = {
-        name,
+      const { email, password, phone, organizationName } = data;
+      
+      // Build registration data according to RegisterRequest type
+      const registrationData: RegisterRequest = {
         email,
         password,
-        ...(phone && { phone }),
+        // Only include phone if it has a value
+        ...(phone && phone.trim() !== '' && { phone }),
+        // Only include organizationName if it has a value
+        ...(organizationName && organizationName.trim() !== '' && { organizationName }),
       };
 
+      // Call register - does NOT auto-login
       await register(registrationData);
+      
+      // On success, navigate to login with success message
+      setIsSubmitting(false);
+      navigation.navigate('Login', { 
+        successMessage: 'Conta criada com sucesso! Faça login para continuar.' 
+      });
     } catch (error) {
       const apiError = error as ApiError;
       setIsSubmitting(false);
       setErrorMessage(
-        apiError.message || 'Unable to create account. Please try again.'
+        apiError.message || 'Não foi possível criar a conta. Tente novamente.'
       );
     }
   };
@@ -121,8 +127,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Sign up to get started</Text>
+          <Text style={styles.title}>Criar Conta</Text>
+          <Text style={styles.subtitle}>Cadastre-se para começar</Text>
         </View>
 
         {errorMessage ? (
@@ -135,29 +141,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
         <View style={styles.form}>
           <Controller
             control={control}
-            name="name"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Full Name"
-                placeholder="Enter your full name"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.name?.message}
-                autoCapitalize="words"
-                autoCorrect={false}
-                editable={!isSubmitting}
-              />
-            )}
-          />
-
-          <Controller
-            control={control}
             name="email"
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                label="Email"
-                placeholder="Enter your email"
+                label="Email *"
+                placeholder="Digite seu email"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -172,30 +160,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
           <Controller
             control={control}
-            name="phone"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Phone Number (Optional)"
-                placeholder="Enter your phone number"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.phone?.message}
-                keyboardType="phone-pad"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isSubmitting}
-              />
-            )}
-          />
-
-          <Controller
-            control={control}
             name="password"
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                label="Password"
-                placeholder="Enter your password"
+                label="Senha *"
+                placeholder="Digite sua senha (mínimo 8 caracteres)"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -213,14 +182,51 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
             name="confirmPassword"
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                label="Confirm Password"
-                placeholder="Re-enter your password"
+                label="Confirmar Senha *"
+                placeholder="Digite sua senha novamente"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
                 error={errors.confirmPassword?.message}
                 secureTextEntry
                 autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isSubmitting}
+              />
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="phone"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <Input
+                label="Telefone (Opcional)"
+                placeholder="Digite seu telefone"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                error={errors.phone?.message}
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isSubmitting}
+              />
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="organizationName"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <Input
+                label="Nome da Organização (Opcional)"
+                placeholder="Digite o nome da sua organização"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                error={errors.organizationName?.message}
+                autoCapitalize="words"
                 autoCorrect={false}
                 editable={!isSubmitting}
               />
@@ -244,10 +250,10 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
                     {value && <Text style={styles.checkboxCheck}>✓</Text>}
                   </View>
                   <Text style={styles.checkboxLabel}>
-                    I accept the{' '}
-                    <Text style={styles.link}>Terms of Service</Text>
-                    {' '}and{' '}
-                    <Text style={styles.link}>Privacy Policy</Text>
+                    Eu aceito os{' '}
+                    <Text style={styles.link}>Termos de Serviço</Text>
+                    {' '}e a{' '}
+                    <Text style={styles.link}>Política de Privacidade</Text>
                   </Text>
                 </TouchableOpacity>
                 {errors.acceptTerms && (
@@ -260,7 +266,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
           />
 
           <Button
-            title="Create Account"
+            title="Criar Conta"
             onPress={handleSubmit(onSubmit)}
             loading={isSubmitting}
             disabled={isSubmitting}
@@ -270,9 +276,9 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account? </Text>
+          <Text style={styles.footerText}>Já tem uma conta? </Text>
           <TouchableOpacity onPress={handleLogin} disabled={isSubmitting}>
-            <Text style={styles.loginLink}>Sign In</Text>
+            <Text style={styles.loginLink}>Entrar</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

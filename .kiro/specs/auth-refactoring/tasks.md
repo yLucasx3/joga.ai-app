@@ -216,41 +216,41 @@ Este plano implementa a refatoração do sistema de autenticação no app mobile
 
 ## Phase 6: Update UI Screens
 
-- [ ] 13. Update LoginScreen
-  - [ ] 13.1 Update form validation
+- [x] 13. Update LoginScreen
+  - [x] 13.1 Update form validation
     - Add email format validation
     - Add password required validation
     - Show validation errors inline
     - Disable submit button until valid
     - _Requirements: 5.1, 5.4, 5.5_
   
-  - [ ] 13.2 Update login handler
+  - [x] 13.2 Update login handler
     - Call AuthContext.login
     - Show loading state during request
     - Display error messages from authService
     - Navigate to home on success
     - _Requirements: 3.1, 3.2_
   
-  - [ ] 13.3 Add forgot password link
+  - [x] 13.3 Add forgot password link
     - Navigate to ForgotPasswordScreen
     - _Requirements: 8.1_
 
-- [ ] 14. Update RegisterScreen
-  - [ ] 14.1 Update form fields
+- [x] 14. Update RegisterScreen
+  - [x] 14.1 Update form fields
     - Keep email and password as required
     - Make phone optional
     - Add organizationName optional field
     - Update field labels and placeholders
     - _Requirements: 1.3, 5.3_
   
-  - [ ] 14.2 Update form validation
+  - [x] 14.2 Update form validation
     - Validate email format
     - Validate password minimum 8 characters
     - Validate optional phone format
     - Show validation errors inline
     - _Requirements: 5.1, 5.2, 5.3, 5.5_
   
-  - [ ] 14.3 Update register handler
+  - [x] 14.3 Update register handler
     - Call AuthContext.register
     - Show loading state during request
     - Display error messages from authService
