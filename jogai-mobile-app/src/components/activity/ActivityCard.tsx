@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { Activity, ActivityStatus } from '../../types/activity.types';
+import { Activity, ActivityStatus, Location } from '../../types/activity.types';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -8,12 +8,14 @@ import { Badge, BadgeVariant } from '../common/Badge';
 import { getSportByKey } from '../../constants/sports';
 import { formatDateTime } from '../../utils/date.utils';
 import { locationService } from '../../services/location.service';
+import { Coordinate } from '@/hooks/useActivityMap';
 
 interface ActivityCardProps {
   activity: Activity;
   onPress: () => void;
   showDistance?: boolean;
   userLocation?: { latitude: number; longitude: number } | null;
+  isSelected?: boolean;
 }
 
 /**
@@ -24,6 +26,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
   onPress,
   showDistance = true,
   userLocation,
+  isSelected = false,
 }) => {
   const sport = getSportByKey(activity.sportKey);
   const availableSpots = activity.maxPlayers - activity.currentPlayers;
@@ -56,7 +59,12 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
   const getDistance = (): string | null => {
     if (!showDistance || !userLocation) return null;
 
-    const distance = locationService.calculateDistance(userLocation, activity.location);
+    const activityLocation: Coordinate = {
+      latitude: activity.field.establishment.latitude,
+      longitude: activity.field.establishment.longitude
+    }
+
+    const distance = locationService.calculateDistance(userLocation, activityLocation);
     return locationService.formatDistance(distance);
   };
 
@@ -65,14 +73,14 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 
   return (
     <TouchableOpacity
-      style={styles.container}
+      style={[styles.container, isSelected && styles.containerSelected]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       {/* Image */}
-      {activity.field.imageUrl ? (
+      {activity.field.photos.length ? (
         <Image
-          source={{ uri: activity.field.imageUrl }}
+          source={{ uri: activity.field.photos[0] }}
           style={styles.image}
           resizeMode="cover"
         />
@@ -148,6 +156,14 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     overflow: 'hidden',
+  },
+  containerSelected: {
+    borderWidth: 2,
+    borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   image: {
     width: '100%',

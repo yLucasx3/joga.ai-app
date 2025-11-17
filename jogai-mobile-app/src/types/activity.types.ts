@@ -5,23 +5,36 @@ export type ParticipantStatus = 'CONFIRMED' | 'CANCELLED';
 
 export interface Activity {
   id: string;
+  organizationId: string;
+  fieldId: string;
+  sportKey: string;
+  organizerId: string;
+  type: string;
   title: string;
   description?: string;
-  sportKey: string;
-  type: ActivityType;
-  status: ActivityStatus;
+  locationName: string;
+  latitude: number;
+  longitude: number;
   startDate: string;
   endDate: string;
   maxPlayers: number;
   currentPlayers: number;
-  shareToken?: string;
-  shareExpiresAt?: string;
-  organizer: Organizer;
+  status: ActivityStatus;
+  shareToken: string;
+  shareExpiresAt: string;
   field: Field;
-  participants: Participant[];
-  location: Location;
+  sport: Sport;
+  organizer: Organizer;
+  organization: Organization;
+  participants: Participant[]
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
 }
 
 export interface Organizer {
@@ -39,18 +52,11 @@ export interface Participant {
   joinedAt: string;
 }
 
-export interface Field {
-  id: string;
-  name: string;
-  capacity: number;
-  imageUrl?: string;
-  establishment: Establishment;
-  amenities: string[];
-}
-
 export interface Establishment {
   id: string;
   name: string;
+  latitude: number;
+  longitude: number;
   address: Address;
 }
 
@@ -120,6 +126,7 @@ export interface Field {
   name: string;
   description?: string;
   capacity: number;
+  photos: string[]
   dimensions?: FieldDimensions;
   amenities: string[]; // Array of amenity keys
   status: FieldStatus;

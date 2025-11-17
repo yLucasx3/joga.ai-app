@@ -69,6 +69,8 @@ const ActivityDetailsScreen: React.FC = () => {
       setLoading(true);
       setError(null);
       const data = await activityApi.getActivityById(activityId);
+      data.participants = [];
+      
       setActivity(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load activity');
@@ -293,8 +295,8 @@ const ActivityDetailsScreen: React.FC = () => {
     <View style={styles.wrapper}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header Image */}
-        {activity.field.imageUrl ? (
-          <Image source={{ uri: activity.field.imageUrl }} style={styles.headerImage} />
+        {activity.field.photos.length ? (
+          <Image source={{ uri: activity.field.photos[0] }} style={styles.headerImage} />
         ) : (
           <View style={[styles.headerImage, styles.placeholderImage]}>
             <MaterialCommunityIcons name="soccer-field" size={64} color={colors.gray400} />
@@ -365,8 +367,8 @@ const ActivityDetailsScreen: React.FC = () => {
               style={styles.map}
               provider={PROVIDER_GOOGLE}
               initialRegion={{
-                latitude: activity.location.latitude,
-                longitude: activity.location.longitude,
+                latitude: activity.field.establishment.latitude,
+                longitude: activity.field.establishment.longitude,
                 latitudeDelta: 0.01,
                 longitudeDelta: 0.01,
               }}
@@ -377,8 +379,8 @@ const ActivityDetailsScreen: React.FC = () => {
             >
               <Marker
                 coordinate={{
-                  latitude: activity.location.latitude,
-                  longitude: activity.location.longitude,
+                  latitude: activity.field.establishment.latitude,
+                  longitude: activity.field.establishment.longitude,
                 }}
                 title={activity.field.establishment.name}
               />

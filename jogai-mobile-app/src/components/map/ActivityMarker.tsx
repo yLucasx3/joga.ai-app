@@ -24,11 +24,12 @@ export const ActivityMarker: React.FC<ActivityMarkerProps> = ({ activity, onPres
     return colors.statusOpen;
   };
 
+  console.log('[ActivityMarker] activity: ', activity)
   return (
     <Marker
       coordinate={{
-        latitude: activity.location.latitude,
-        longitude: activity.location.longitude,
+        latitude: activity.field.establishment.latitude,
+        longitude: activity.field.establishment.longitude,
       }}
       onPress={() => onPress(activity)}
       tracksViewChanges={false}

@@ -160,21 +160,27 @@ export const activityApi = {
   async getNearbyActivities(
     latitude: number,
     longitude: number,
-    radius: number = 10,
+    radiusInKm: number = 10,
     filters?: ActivityFilters,
     pagination?: PaginationParams
-  ): Promise<PaginatedResponse<Activity>> {
-    const params = {
-      latitude,
-      longitude,
-      radius,
-      ...filters,
-      ...pagination,
+  ): Promise<{ activities: Activity[], total: number }> {
+    const params: Record<string, any> = {
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      radiusInKm: radiusInKm.toString(),
     };
 
-    const response = await apiClient.get<PaginatedResponse<Activity>>('/activities/nearby', {
-      params,
-    });
+    // Add optional filters
+    if (filters?.type) params.type = filters.type;
+    if (filters?.sportKeys && filters.sportKeys.length > 0) {
+      params.sportKey = filters.sportKeys[0]; // API accepts single sportKey
+    }
+    if (filters?.status) params.status = filters.status;
+
+    const response = await apiClient.get<{
+      activities: Activity[];
+      total: number;
+    }>('/activities/nearby/list', { params });
 
     return response.data;
   },

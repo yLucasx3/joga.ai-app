@@ -4,26 +4,28 @@
  * Main screen showing map with activity markers and bottom sheet with activity list
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  RefreshControl,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { MapView } from '../../components/map/MapView';
-import { ActivityCard } from '../../components/activity/ActivityCard';
+import { MapControls } from '../../components/map/MapControls';
 import { DraggableBottomSheetSimple } from '../../components/common/DraggableBottomSheetSimple';
-import { Dropdown, DropdownOption } from '../../components/common/Dropdown';
+import { DropdownOption } from '../../components/common/Dropdown';
+import { FilterBar } from '../../components/filters/FilterBar';
+import { SearchInput } from '../../components/filters/SearchInput';
+import { FilterChips, FilterChip } from '../../components/filters/FilterChips';
+import { ActivityList } from '../../components/activity/ActivityList';
+import { ActivityListHeader } from '../../components/activity/ActivityListHeader';
+import { ActivityCardSkeleton } from '../../components/activity/ActivityCardSkeleton';
+import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { useLocation } from '../../hooks/useLocation';
 import { useNearbyActivities } from '../../hooks/useActivities';
+import { useActivityFilters } from '../../hooks/useActivityFilters';
+import { useActivityMap } from '../../hooks/useActivityMap';
+import { useActivitySearch } from '../../hooks/useActivitySearch';
+import { useActivityListSync } from '../../hooks/useActivityListSync';
 import { Activity } from '../../types/activity.types';
 import { SPORTS } from '../../constants/sports';
 
@@ -31,11 +33,14 @@ const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
   const { location, loading: locationLoading } = useLocation();
   
-  // Filters state
-  const [selectedType, setSelectedType] = useState<string>('ALL');
-  const [selectedSports, setSelectedSports] = useState<string[]>([]);
-  const [selectedDistance, setSelectedDistance] = useState<string>('10');
-  const [selectedDate, setSelectedDate] = useState<string>('ALL');
+  // Use custom hooks for state management
+  const {
+    filters,
+    activeFiltersCount,
+    setFilter,
+    clearFilters: clearAllFilters,
+    debouncedFilters,
+  } = useActivityFilters();
   
 
 
@@ -71,19 +76,23 @@ const HomeScreen: React.FC = () => {
     { label: 'This Month', value: 'MONTH', icon: '📅' },
   ];
 
-  // Build filters object
-  const filters = useMemo(() => {
+  // Build API filters object from filter state
+  const apiFilters = useMemo(() => {
     const f: any = {};
-    if (selectedType && selectedType !== 'ALL') f.type = selectedType;
-    if (selectedSports.length > 0) f.sportKeys = selectedSports;
+    if (debouncedFilters.type && debouncedFilters.type !== 'ALL') {
+      f.type = debouncedFilters.type;
+    }
+    if (debouncedFilters.sports.length > 0) {
+      f.sportKeys = debouncedFilters.sports;
+    }
     
     // Date filter
-    if (selectedDate !== 'ALL') {
+    if (debouncedFilters.date !== 'ALL') {
       const now = new Date();
       let startDate: Date;
       let endDate: Date;
 
-      switch (selectedDate) {
+      switch (debouncedFilters.date) {
         case 'TODAY':
           startDate = new Date(now.setHours(0, 0, 0, 0));
           endDate = new Date(now.setHours(23, 59, 59, 999));
@@ -113,7 +122,7 @@ const HomeScreen: React.FC = () => {
     
     f.status = 'ACTIVE'; // Only show active activities
     return f;
-  }, [selectedType, selectedSports, selectedDate]);
+  }, [debouncedFilters]);
 
   // Fetch nearby activities
   const {
@@ -124,14 +133,54 @@ const HomeScreen: React.FC = () => {
   } = useNearbyActivities(
     location?.latitude || 0,
     location?.longitude || 0,
-    parseInt(selectedDistance, 10), // Use selected distance
-    filters,
+    parseInt(debouncedFilters.distance, 10),
+    apiFilters,
     undefined,
     !!location
   );
 
-  const activities = activitiesData?.data || [];
+  const activities = activitiesData?.activities || [];
   const isLoading = locationLoading || activitiesLoading;
+
+  // Use map hook for map state management
+  const {
+    mapState,
+    centerOnActivity,
+    centerOnUser,
+    selectMarker,
+    setMapZoom,
+    updateVisibleMarkers,
+  } = useActivityMap(activities, location);
+
+  // Use search hook
+  const {
+    searchQuery,
+    setSearchQuery,
+    debouncedSearchQuery,
+    addRecentSearch,
+  } = useActivitySearch(activities);
+
+  // Track selected activity for highlighting
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
+
+  // Use list sync hook for map/list synchronization
+  const { listRef, scrollToActivity, onViewableItemsChanged, viewabilityConfig } =
+    useActivityListSync(activities, updateVisibleMarkers);
+
+  // Filter activities by search query
+  const filteredActivities = useMemo(() => {
+    if (!debouncedSearchQuery.trim()) {
+      return activities;
+    }
+
+    const query = debouncedSearchQuery.toLowerCase();
+    return activities.filter(
+      (activity) =>
+        activity.title.toLowerCase().includes(query) ||
+        activity.field.establishment.name.toLowerCase().includes(query) ||
+        activity.field.establishment.address.street.toLowerCase().includes(query)
+    );
+  }, [activities, debouncedSearchQuery]);
 
   /**
    * Handle activity card press
@@ -144,10 +193,61 @@ const HomeScreen: React.FC = () => {
   /**
    * Handle marker press
    */
-  const handleMarkerPress = useCallback((activity: Activity) => {
-    // Could scroll to the activity card or show a preview
-    handleActivityPress(activity);
-  }, [handleActivityPress]);
+  const handleMarkerPress = useCallback(
+    (activity: Activity) => {
+      // Select marker and center on activity
+      selectMarker(activity.id);
+      centerOnActivity(activity);
+      setSelectedActivityId(activity.id);
+
+      // Scroll list to show the activity
+      scrollToActivity(activity.id);
+
+      // Clear selection after 3 seconds
+      setTimeout(() => {
+        setSelectedActivityId(null);
+      }, 3000);
+    },
+    [selectMarker, centerOnActivity, scrollToActivity]
+  );
+
+  /**
+   * Handle activity card press - also centers map
+   */
+  const handleActivityCardPress = useCallback(
+    (activity: Activity) => {
+      // Center map on activity
+      centerOnActivity(activity);
+      selectMarker(activity.id);
+
+      // Navigate to details
+      handleActivityPress(activity);
+    },
+    [centerOnActivity, selectMarker, handleActivityPress]
+  );
+
+  /**
+   * Handle search submit
+   */
+  const handleSearchSubmit = useCallback(() => {
+    if (searchQuery.trim()) {
+      addRecentSearch(searchQuery);
+    }
+  }, [searchQuery, addRecentSearch]);
+
+  /**
+   * Handle zoom in
+   */
+  const handleZoomIn = useCallback(() => {
+    setMapZoom(mapState.zoom + 1);
+  }, [mapState.zoom, setMapZoom]);
+
+  /**
+   * Handle zoom out
+   */
+  const handleZoomOut = useCallback(() => {
+    setMapZoom(mapState.zoom - 1);
+  }, [mapState.zoom, setMapZoom]);
 
   /**
    * Handle refresh
@@ -157,48 +257,91 @@ const HomeScreen: React.FC = () => {
   }, [refetch]);
 
   /**
-   * Handle activity type change
+   * Handle filter change
    */
-  const handleTypeChange = useCallback((value: string | string[]) => {
-    setSelectedType(value as string);
-  }, []);
+  const handleFilterChange = useCallback(
+    <K extends keyof typeof filters>(key: K, value: typeof filters[K]) => {
+      setFilter(key, value);
+    },
+    [setFilter]
+  );
 
   /**
-   * Handle sports change
+   * Generate filter chips from active filters
    */
-  const handleSportsChange = useCallback((value: string | string[]) => {
-    setSelectedSports(value as string[]);
-  }, []);
+  const filterChips = useMemo((): FilterChip[] => {
+    const chips: FilterChip[] = [];
+
+    // Type filter
+    if (filters.type !== 'ALL') {
+      const option = activityTypeOptions.find((opt) => opt.value === filters.type);
+      if (option) {
+        chips.push({
+          key: 'type',
+          label: option.label,
+          value: filters.type,
+        });
+      }
+    }
+
+    // Sports filters
+    filters.sports.forEach((sportKey) => {
+      const sport = SPORTS.find((s) => s.key === sportKey);
+      if (sport) {
+        chips.push({
+          key: 'sports',
+          label: sport.name,
+          value: sportKey,
+        });
+      }
+    });
+
+    // Distance filter
+    if (filters.distance !== '10') {
+      const option = distanceOptions.find((opt) => opt.value === filters.distance);
+      if (option) {
+        chips.push({
+          key: 'distance',
+          label: option.label,
+          value: filters.distance,
+        });
+      }
+    }
+
+    // Date filter
+    if (filters.date !== 'ALL') {
+      const option = dateOptions.find((opt) => opt.value === filters.date);
+      if (option) {
+        chips.push({
+          key: 'date',
+          label: option.label,
+          value: filters.date,
+        });
+      }
+    }
+
+    return chips;
+  }, [filters, activityTypeOptions, distanceOptions, dateOptions]);
 
   /**
-   * Handle distance change
+   * Handle filter chip removal
    */
-  const handleDistanceChange = useCallback((value: string | string[]) => {
-    setSelectedDistance(value as string);
-  }, []);
-
-  /**
-   * Handle date change
-   */
-  const handleDateChange = useCallback((value: string | string[]) => {
-    setSelectedDate(value as string);
-  }, []);
-
-  /**
-   * Clear all filters
-   */
-  const clearFilters = useCallback(() => {
-    setSelectedType('ALL');
-    setSelectedSports([]);
-    setSelectedDistance('10');
-    setSelectedDate('ALL');
-  }, []);
-
-  const hasFilters = 
-    selectedType !== 'ALL' || 
-    selectedSports.length > 0 || 
-    selectedDistance !== '10' ||
-    selectedDate !== 'ALL';
+  const handleRemoveFilterChip = useCallback(
+    (chipKey: string, chipValue: string) => {
+      if (chipKey === 'sports') {
+        // Remove specific sport from array
+        const newSports = filters.sports.filter((s) => s !== chipValue);
+        setFilter('sports', newSports);
+      } else if (chipKey === 'type') {
+        setFilter('type', 'ALL');
+      } else if (chipKey === 'distance') {
+        setFilter('distance', '10');
+      } else if (chipKey === 'date') {
+        setFilter('date', 'ALL');
+      }
+    },
+    [filters.sports, setFilter]
+  );
 
   /**
    * Handle bottom sheet snap point change
@@ -208,134 +351,79 @@ const HomeScreen: React.FC = () => {
   }, []);
 
   return (
-    <View style={styles.container}>
-      {/* Map */}
-      <MapView
-        activities={activities}
-        onMarkerPress={handleMarkerPress}
-        userLocation={location}
-        showUserLocation={true}
-      />
+    <ErrorBoundary>
+      <View style={styles.container}>
+        {/* Map */}
+        <MapView
+          activities={filteredActivities}
+          onMarkerPress={handleMarkerPress}
+          userLocation={location}
+          showUserLocation={true}
+        />
 
-      {/* Loading overlay */}
-      {isLoading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      )}
+        {/* Map Controls */}
+        <MapControls
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onCenterOnUser={centerOnUser}
+          userLocation={location}
+        />
 
-      {/* Draggable Bottom Sheet with Activities */}
-      <DraggableBottomSheetSimple
-        initialSnapPoint="MID"
-        onSnapPointChange={handleSnapPointChange}
-      >
-        {/* Filters */}
-        <View style={styles.filtersContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filtersContent}
-          >
-            {/* Activity Type Dropdown */}
-            <Dropdown
-              label="Activity Type"
-              placeholder="All"
-              options={activityTypeOptions}
-              value={selectedType}
-              onChange={handleTypeChange}
-              icon="🎯"
-            />
-
-            {/* Sports Dropdown */}
-            <Dropdown
-              label="Sports"
-              placeholder="All Sports"
-              options={sportOptions}
-              value={selectedSports}
-              multiple
-              onChange={handleSportsChange}
-              icon="⚽"
-            />
-
-            {/* Distance Dropdown */}
-            <Dropdown
-              label="Distance"
-              placeholder="10 km"
-              options={distanceOptions}
-              value={selectedDistance}
-              onChange={handleDistanceChange}
-              icon="📍"
-            />
-
-            {/* Date Dropdown */}
-            <Dropdown
-              label="When"
-              placeholder="All"
-              options={dateOptions}
-              value={selectedDate}
-              onChange={handleDateChange}
-              icon="📅"
-            />
-
-            {/* Clear filters */}
-            {hasFilters && (
-              <TouchableOpacity
-                style={styles.clearButton}
-                onPress={clearFilters}
-              >
-                <Text style={styles.clearButtonText}>Clear</Text>
-              </TouchableOpacity>
-            )}
-          </ScrollView>
-        </View>
-
-        {/* Activities List */}
-        <ScrollView
-          style={styles.activitiesList}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefetching}
-              onRefresh={handleRefresh}
-              tintColor={colors.primary}
-            />
-          }
+        {/* Draggable Bottom Sheet with Activities */}
+        <DraggableBottomSheetSimple
+          initialSnapPoint="MID"
+          onSnapPointChange={handleSnapPointChange}
         >
-          {/* Header */}
-          <View style={styles.listHeader}>
-            <Text style={styles.listTitle}>
-              {activities.length} {activities.length === 1 ? 'Activity' : 'Activities'} Nearby
-            </Text>
-          </View>
+          {/* Search Input */}
+          <SearchInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search activities..."
+            onBlur={handleSearchSubmit}
+          />
 
-          {/* Activities */}
-          {activities.length > 0 ? (
-            activities.map((activity) => (
-              <ActivityCard
-                key={activity.id}
-                activity={activity}
-                onPress={() => handleActivityPress(activity)}
-                showDistance={true}
-                userLocation={location}
-              />
-            ))
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateIcon}>🔍</Text>
-              <Text style={styles.emptyStateTitle}>No activities found</Text>
-              <Text style={styles.emptyStateText}>
-                {hasFilters
-                  ? 'Try adjusting your filters'
-                  : 'Be the first to create an activity!'}
-              </Text>
-            </View>
+          {/* Filter Chips */}
+          <FilterChips chips={filterChips} onRemove={handleRemoveFilterChip} />
+
+          {/* Filter Bar */}
+          <FilterBar
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            onClearFilters={clearAllFilters}
+            activeFiltersCount={activeFiltersCount}
+            activityTypeOptions={activityTypeOptions}
+            sportOptions={sportOptions}
+            distanceOptions={distanceOptions}
+            dateOptions={dateOptions}
+          />
+
+          {/* Activity List Header */}
+          <ActivityListHeader
+            count={filteredActivities.length}
+            activeFiltersCount={activeFiltersCount}
+          />
+
+          {/* Loading Skeletons */}
+          {isLoading && <ActivityCardSkeleton count={5} />}
+
+          {/* Activities List */}
+          {!isLoading && (
+            <ActivityList
+              ref={listRef}
+              activities={filteredActivities}
+              isLoading={isLoading}
+              isRefreshing={isRefetching}
+              onRefresh={handleRefresh}
+              onActivityPress={handleActivityCardPress}
+              selectedActivityId={selectedActivityId}
+              userLocation={location}
+              onViewableItemsChanged={onViewableItemsChanged}
+              viewabilityConfig={viewabilityConfig}
+            />
           )}
-
-          {/* Bottom padding */}
-          <View style={styles.bottomPadding} />
-        </ScrollView>
-      </DraggableBottomSheetSimple>
-    </View>
+        </DraggableBottomSheetSimple>
+      </View>
+    </ErrorBoundary>
   );
 };
 
@@ -343,73 +431,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.overlayLight,
-  },
-  filtersContainer: {
-    paddingVertical: spacing.sm,
-  },
-  filtersContent: {
-    paddingHorizontal: spacing.md,
-  },
-  clearButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    justifyContent: 'center',
-    backgroundColor: colors.gray100,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.gray200,
-  },
-  clearButtonText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.gray600,
-  },
-  activitiesList: {
-    flex: 1,
-  },
-  listHeader: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  listTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing['2xl'],
-    paddingHorizontal: spacing.lg,
-  },
-  emptyStateIcon: {
-    fontSize: 64,
-    marginBottom: spacing.md,
-  },
-  emptyStateTitle: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  emptyStateText: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  bottomPadding: {
-    height: spacing.xl,
   },
 });
 
