@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Keys for secure storage
 const TOKEN_KEY = 'auth_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
+const SESSION_ID_KEY = 'session_id';
 const USER_KEY = 'user_data';
 
 // Keys for async storage (non-sensitive data)
@@ -17,12 +18,19 @@ export const storageService = {
   // Token Management (Secure)
   async saveTokens(accessToken: string, refreshToken: string): Promise<void> {
     try {
+      // Use Promise.all for atomic operation - both succeed or both fail
       await Promise.all([
         SecureStore.setItemAsync(TOKEN_KEY, accessToken),
         SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken),
       ]);
     } catch (error) {
       console.error('Error saving tokens:', error);
+      // If saving fails, attempt to clear any partially saved data
+      try {
+        await this.clearTokens();
+      } catch (clearError) {
+        console.error('Error clearing tokens after failed save:', clearError);
+      }
       throw new Error('Failed to save authentication tokens');
     }
   },
@@ -53,6 +61,33 @@ export const storageService = {
       ]);
     } catch (error) {
       console.error('Error clearing tokens:', error);
+    }
+  },
+
+  // Session ID Management (Secure)
+  async saveSessionId(sessionId: string): Promise<void> {
+    try {
+      await SecureStore.setItemAsync(SESSION_ID_KEY, sessionId);
+    } catch (error) {
+      console.error('Error saving session ID:', error);
+      throw new Error('Failed to save session ID');
+    }
+  },
+
+  async getSessionId(): Promise<string | null> {
+    try {
+      return await SecureStore.getItemAsync(SESSION_ID_KEY);
+    } catch (error) {
+      console.error('Error getting session ID:', error);
+      return null;
+    }
+  },
+
+  async clearSessionId(): Promise<void> {
+    try {
+      await SecureStore.deleteItemAsync(SESSION_ID_KEY);
+    } catch (error) {
+      console.error('Error clearing session ID:', error);
     }
   },
 
@@ -132,6 +167,7 @@ export const storageService = {
     try {
       await Promise.all([
         this.clearTokens(),
+        this.clearSessionId(),
         this.clearUser(),
         AsyncStorage.removeItem(PREFERENCES_KEY),
         AsyncStorage.removeItem(ONBOARDING_KEY),

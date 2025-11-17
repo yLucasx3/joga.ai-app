@@ -35,10 +35,13 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
   });
 
   // Request interceptor - Add authentication token
+  // Requirement 4.5: Add access token to Authorization header, handle missing token gracefully
   client.interceptors.request.use(
     async (config: InternalAxiosRequestConfig) => {
       const token = await storageService.getAccessToken();
       
+      // Only add Authorization header if token exists
+      // This allows unauthenticated requests to proceed without token
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -68,9 +71,11 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
       }
 
       // Handle 401 Unauthorized - Token refresh
+      // Requirements: 4.1, 4.2, 4.3, 4.4
       if (error.response.status === 401 && !originalRequest._retry) {
         if (isRefreshing) {
           // Queue the request while refresh is in progress
+          // This prevents multiple simultaneous refresh attempts
           return new Promise((resolve, reject) => {
             failedQueue.push({ resolve, reject });
           })
@@ -85,39 +90,44 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
             });
         }
 
+        // Mark request as retried to prevent infinite loops
         originalRequest._retry = true;
         isRefreshing = true;
 
         try {
-          const refreshToken = await storageService.getRefreshToken();
+          // Import authService dynamically to avoid circular dependency
+          const { authService } = await import('../services/auth.service');
+          
+          // Call authService.refreshTokens() which handles sessionId + refreshToken
+          const refreshed = await authService.refreshTokens();
 
-          if (!refreshToken) {
-            throw new Error('No refresh token available');
+          if (!refreshed) {
+            throw new Error('Token refresh failed');
           }
 
-          // Call refresh token endpoint
-          const response = await authClient.post('/auth/refresh', {
-            refreshToken,
-          });
+          // Get the new access token
+          const newAccessToken = await storageService.getAccessToken();
 
-          const { accessToken, refreshToken: newRefreshToken } = response.data;
+          if (!newAccessToken) {
+            throw new Error('No access token after refresh');
+          }
 
-          // Save new tokens
-          await storageService.saveTokens(accessToken, newRefreshToken);
-
-          // Update authorization header
+          // Update authorization header with new token
           if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           }
 
-          processQueue(null, accessToken);
+          // Process queued requests with new token
+          processQueue(null, newAccessToken);
 
+          // Retry original request with new token
           return client(originalRequest);
         } catch (refreshError) {
+          // Process queued requests with error
           processQueue(refreshError, null);
           
-          // Clear tokens and redirect to login
-          await storageService.clearAll();
+          // Clear auth and reject on failure
+          // authService.refreshTokens() already clears storage on failure
           
           const apiError: ApiError = {
             code: ErrorCode.UNAUTHORIZED,

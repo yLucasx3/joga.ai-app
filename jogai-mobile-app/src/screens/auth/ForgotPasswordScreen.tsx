@@ -37,7 +37,7 @@ interface ForgotPasswordScreenProps {
 export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
   navigation,
 }) => {
-  const { forgotPassword } = useAuth();
+  const { requestPasswordReset } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -56,7 +56,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
   const onSubmit = async (data: ForgotPasswordFormData) => {
     try {
       setIsSubmitting(true);
-      await forgotPassword(data.email);
+      await requestPasswordReset(data.email);
       setIsSuccess(true);
     } catch (error) {
       const apiError = error as ApiError;
@@ -79,7 +79,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
     if (email) {
       try {
         setIsSubmitting(true);
-        await forgotPassword(email);
+        await requestPasswordReset(email);
         Alert.alert(
           'Email Sent',
           'Password reset instructions have been sent to your email.',
